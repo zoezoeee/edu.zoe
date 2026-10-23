@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+<title>연수 전자서명 시스템</title>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <div class="page">
+
+    <!-- ============ 상단 기관 정보 배너 ============ -->
+    <header class="org-banner" id="orgBanner">
+      <p class="org-name" id="orgName">연수 전자서명 시스템</p>
+      <p class="org-notice" id="orgNotice"></p>
+    </header>
+
+    <main class="sheet">
+
+      <!-- ============ 상태: 불러오는 중 ============ -->
+      <section class="state state-loading" id="stateLoading">
+        <div class="spinner" aria-hidden="true"></div>
+        <p>연수 정보를 불러오는 중입니다…</p>
+      </section>
+
+      <!-- ============ 상태: 링크 오류 ============ -->
+      <section class="state state-error" id="stateLinkError" hidden>
+        <div class="state-icon state-icon-error" aria-hidden="true">!</div>
+        <h2>연수 정보를 확인할 수 없습니다</h2>
+        <p class="state-desc" id="linkErrorMessage">
+          전달받은 링크가 정확한지 다시 확인해주세요. 문제가 계속되면 담당자에게 문의해주세요.
+        </p>
+      </section>
+
+      <!-- ============ 상태: 학교 공통 주소 — 본인 선택 + 오늘의 연수 목록 ============ -->
+      <section class="state-main" id="stateMain" hidden>
+
+        <div class="step" id="orgStepIdentify">
+          <p class="step-label">1. 본인 선택</p>
+          <p class="step-desc">부서를 고른 뒤 본인 이름을 선택해주세요.</p>
+
+          <label class="field">
+            <span>부서</span>
+            <select id="orgDepartmentSelect">
+              <option value="">부서를 선택해주세요</option>
+            </select>
+          </label>
+
+          <label class="field">
+            <span>성명</span>
+            <select id="orgMemberSelect" disabled>
+              <option value="">부서를 먼저 선택해주세요</option>
+            </select>
+          </label>
+
+          <p class="field-hint field-hint-muted" id="orgIdentifyNote" hidden></p>
+        </div>
+
+        <div class="step" id="orgStepTrainings" hidden>
+          <div class="list-head">
+            <div>
+              <p class="step-label">2. 오늘의 연수</p>
+              <p class="signer-label" id="orgSelectedLabel"></p>
+            </div>
+            <button type="button" class="btn-small" id="orgRefreshBtn">새로고침</button>
+          </div>
+
+          <div class="list-state" id="orgTrainingsLoading" hidden>
+            <div class="spinner" aria-hidden="true"></div>
+            <p>오늘의 연수를 불러오는 중입니다…</p>
+          </div>
+
+          <div class="list-state list-state-error" id="orgTrainingsError" hidden>
+            <p id="orgTrainingsErrorMessage">연수 목록을 불러오지 못했습니다.</p>
+            <button type="button" class="btn-small" id="orgTrainingsRetryBtn">다시 시도</button>
+          </div>
+
+          <p class="list-empty" id="orgTrainingsEmpty" hidden>오늘 서명할 연수가 없습니다.</p>
+
+          <ul class="org-training-list" id="orgTrainingList"></ul>
+        </div>
+
+      </section>
+
+      <!-- ============ 상태: 서명 진행 화면 ============ -->
+      <section class="state state-form" id="stateForm" hidden>
+
+        <!-- 학교 공통 주소 흐름에서만 표시: 서명자와 목록으로 돌아가기 -->
+        <div class="signer-bar" id="signerBar" hidden>
+          <button type="button" class="btn-back" id="backToListBtn">&larr; 연수 목록으로</button>
+          <p class="signer-label"><strong id="signerName"></strong></p>
+        </div>
+
+        <!-- 연수 정보 -->
+        <div class="training-info">
+          <p class="training-eyebrow">연수 안내</p>
+          <h1 class="training-title" id="trainingTitle">연수명</h1>
+          <dl class="training-meta">
+            <div>
+              <dt>일시</dt>
+              <dd id="trainingDate">-</dd>
+            </div>
+            <div>
+              <dt>대상</dt>
+              <dd id="trainingTarget">-</dd>
+            </div>
+          </dl>
+        </div>
+
+        <!-- 1단계: 교직원 확인 -->
+        <div class="step" id="stepIdentify">
+          <p class="step-label">1. 본인 확인</p>
+
+          <label class="field">
+            <span>부서</span>
+            <select id="departmentSelect">
+              <option value="">부서를 선택해주세요</option>
+            </select>
+          </label>
+
+          <label class="field">
+            <span>성명</span>
+            <select id="memberSelect" disabled>
+              <option value="">부서를 먼저 선택해주세요</option>
+            </select>
+          </label>
+
+          <p class="field-hint" id="alreadySignedHint" hidden>
+            이미 이 연수에 서명을 완료하셨습니다.
+          </p>
+        </div>
+
+        <!-- 2단계: 서명 -->
+        <div class="step" id="stepSign" hidden>
+          <p class="step-label">2. 서명</p>
+          <p class="step-desc">아래 영역에 손가락 또는 마우스로 서명해주세요.</p>
+
+          <div class="signature-pad">
+            <canvas id="signatureCanvas"></canvas>
+            <p class="signature-placeholder" id="signaturePlaceholder">여기에 서명해주세요</p>
+          </div>
+
+          <p class="signature-notice" id="signatureNotice" role="alert" hidden></p>
+
+          <button type="button" class="btn btn-ghost" id="clearSignatureBtn">서명 지우기</button>
+        </div>
+
+        <!-- 개발 단계 안내 (Apps Script 미연결 시에만 표시) -->
+        <p class="dev-note" id="devNote" hidden></p>
+
+        <!-- 제출 -->
+        <div class="submit-bar">
+          <button type="button" class="btn btn-primary" id="submitBtn" disabled>
+            서명 제출하기
+          </button>
+        </div>
+
+      </section>
+
+      <!-- ============ 상태: 제출 중 ============ -->
+      <section class="state state-loading" id="stateSubmitting" hidden>
+        <div class="spinner" aria-hidden="true"></div>
+        <p>서명을 저장하는 중입니다…</p>
+        <p class="state-desc">잠시만 기다려주세요. 화면을 닫지 마세요.</p>
+      </section>
+
+      <!-- ============ 상태: 제출 실패 ============ -->
+      <section class="state state-error" id="stateSubmitError" hidden>
+        <div class="state-icon state-icon-error" aria-hidden="true">!</div>
+        <h2>서명 제출에 실패했습니다</h2>
+        <p class="state-desc" id="submitErrorMessage">
+          인터넷 연결을 확인한 후 다시 시도해주세요.
+        </p>
+        <button type="button" class="btn btn-primary" id="retryBtn">다시 시도</button>
+        <button type="button" class="btn btn-ghost" id="errorBackBtn" hidden>연수 목록으로</button>
+      </section>
+
+      <!-- ============ 상태: 완료 ============ -->
+      <section class="state state-success" id="stateSuccess" hidden>
+        <div class="state-icon state-icon-success" aria-hidden="true">✓</div>
+        <h2>서명이 완료되었습니다</h2>
+        <p class="state-desc">
+          <strong id="successMemberName"></strong>님, 연수 참여 서명이 정상적으로 저장되었습니다.
+        </p>
+        <button type="button" class="btn btn-primary" id="successBackBtn" hidden>연수 목록으로 돌아가기</button>
+      </section>
+
+    </main>
+
+    <footer class="page-footer">
+      <p>연수 전자서명 시스템</p>
+    </footer>
+
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

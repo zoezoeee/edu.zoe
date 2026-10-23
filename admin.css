@@ -1,0 +1,809 @@
+/* ============================================================
+   연수 전자서명 시스템 — 관리자 화면 전용 스타일
+   ※ 색상/폰트 등 공통 토큰은 style.css의 :root 변수를 그대로 사용합니다.
+   ============================================================ */
+
+.admin-body { background: var(--surface-muted); }
+
+.admin-page {
+  min-height: 100vh;
+  max-width: 780px;
+  margin: 0 auto;
+  padding: 0 20px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---------- 공용 상태(로딩) ---------- */
+.admin-state {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  text-align: center;
+  color: var(--ink-soft);
+  font-size: 14.5px;
+}
+
+/* ---------- 로그인 화면 ---------- */
+.admin-login {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 0;
+}
+
+.admin-login-card {
+  width: 100%;
+  max-width: 400px;
+  margin: 0 auto;
+  background: var(--paper);
+  border-radius: var(--radius-lg);
+  padding: 34px 26px;
+  box-shadow: 0 2px 18px rgba(27, 35, 51, 0.06);
+}
+
+.admin-login-eyebrow {
+  margin: 0 0 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--brand-color);
+}
+
+.admin-login-title {
+  margin: 0 0 26px;
+  font-size: 21px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+}
+
+.admin-page input[type="email"],
+.admin-page input[type="password"],
+.admin-page input[type="text"],
+.admin-page input[type="date"],
+.admin-page select,
+.training-form-panel input[type="text"],
+.training-form-panel input[type="date"],
+.training-form-panel select {
+  width: 100%;
+  padding: 13px 14px;
+  font-size: 15.5px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--paper);
+  color: var(--ink);
+  font-family: inherit;
+}
+
+.admin-page input:focus,
+.admin-page select:focus,
+.training-form-panel input:focus,
+.training-form-panel select:focus {
+  outline: none;
+  border-color: var(--brand-color);
+}
+
+/* 서명 시작/종료 시간: 오전오후/시/분 select 조합 (날짜는 "연수 날짜"
+   하나만 공용으로 사용). 네이티브 select는 옵션 선택 즉시 드롭다운이
+   닫히는 것이 모든 브라우저에서 보장되므로, datetime-local의
+   "선택 후에도 picker가 안 닫히는" 문제를 우회합니다. */
+.kst-time-selects {
+  display: flex;
+  gap: 8px;
+}
+
+.kst-time-selects select {
+  width: auto;
+  flex: 1;
+  min-width: 0;
+  padding-left: 10px;
+  padding-right: 8px;
+}
+
+.training-form-warning {
+  margin: -6px 0 14px;
+  font-size: 12.5px;
+  color: #8A6D1E;
+  background: #FFF6DF;
+  border: 1px solid #F0E0AC;
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+}
+
+.admin-login-error {
+  margin: 2px 0 16px;
+  font-size: 13.5px;
+  color: var(--danger);
+  background: var(--danger-bg);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+}
+
+.admin-login form .btn { margin-top: 6px; }
+
+/* ---------- 관리자 홈 ---------- */
+.admin-home { padding: 30px 0 40px; }
+
+.admin-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 22px;
+}
+
+.admin-header-eyebrow {
+  margin: 0 0 4px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--brand-color);
+}
+
+.admin-header-title {
+  margin: 0;
+  font-size: 21px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+}
+
+.admin-header .btn-ghost {
+  margin-top: 4px;
+  white-space: nowrap;
+}
+
+.admin-card {
+  background: var(--paper);
+  border-radius: var(--radius-md);
+  padding: 20px;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 10px rgba(27, 35, 51, 0.05);
+}
+
+.admin-info-list {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.admin-info-list dt {
+  font-size: 12.5px;
+  color: var(--ink-soft);
+  margin-bottom: 3px;
+}
+
+.admin-info-list dd {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+@media (min-width: 640px) {
+  .admin-info-list {
+    flex-direction: row;
+    gap: 40px;
+  }
+}
+
+.admin-menu-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.admin-menu-card {
+  text-align: left;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.05s ease;
+}
+
+.admin-menu-card:hover,
+.admin-menu-card:focus-visible {
+  border-color: var(--brand-color);
+  box-shadow: 0 4px 16px rgba(27, 35, 51, 0.08);
+  outline: none;
+}
+
+.admin-menu-card:active { transform: translateY(1px); }
+
+.admin-menu-card-title {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.admin-menu-card-desc {
+  font-size: 13px;
+  color: var(--ink-soft);
+  line-height: 1.55;
+}
+
+.admin-menu-card-badge {
+  align-self: flex-start;
+  margin-top: 2px;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--brand-color);
+  background: var(--surface-muted);
+  padding: 3px 10px;
+  border-radius: 999px;
+}
+
+.admin-menu-notice {
+  font-size: 13.5px;
+  color: var(--ink-soft);
+  background: var(--surface-muted);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  margin: 0;
+}
+
+/* ============================================================
+   Phase 8 — 연수관리 화면
+   ============================================================ */
+
+.admin-trainings { padding: 26px 0 60px; }
+
+.admin-subheader {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  margin-bottom: 20px;
+}
+
+.btn-link {
+  border: none;
+  background: none;
+  padding: 0;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ink-soft);
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.btn-link:hover { color: var(--brand-color); }
+
+.admin-subheader-title {
+  margin: 0;
+  font-size: 21px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+}
+
+.trainings-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.btn-compact { width: auto; padding: 11px 18px; }
+
+.trainings-archived-toggle {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13.5px;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+
+.trainings-archived-toggle input { width: auto; }
+
+.month-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.month-chip {
+  border: 1px solid var(--line);
+  background: var(--paper);
+  color: var(--ink-soft);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 7px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.month-chip.is-active {
+  background: var(--brand-color);
+  border-color: var(--brand-color);
+  color: #fff;
+}
+
+.trainings-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 40px 0;
+  color: var(--ink-soft);
+  font-size: 14px;
+  text-align: center;
+}
+
+.trainings-empty {
+  text-align: center;
+  color: var(--ink-soft);
+  font-size: 14.5px;
+  padding: 50px 0;
+  background: var(--paper);
+  border-radius: var(--radius-md);
+}
+
+.month-group {
+  background: var(--paper);
+  border-radius: var(--radius-md);
+  margin-bottom: 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 8px rgba(27, 35, 51, 0.04);
+}
+
+.month-group-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 15px 18px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+}
+
+.month-group-header-title {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.month-group-count {
+  font-size: 12.5px;
+  color: var(--ink-soft);
+  margin-left: 6px;
+  font-weight: 500;
+}
+
+.month-group-arrow {
+  color: var(--ink-soft);
+  transition: transform 0.15s ease;
+  font-size: 12px;
+}
+
+.month-group.is-open .month-group-arrow { transform: rotate(180deg); }
+
+.month-group-body { border-top: 1px solid var(--line); }
+.month-group.is-open .month-group-body { display: block; }
+.month-group:not(.is-open) .month-group-body { display: none; }
+
+.training-card {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 18px;
+  border-top: 1px solid var(--line);
+}
+
+.training-card:first-child { border-top: none; }
+
+.training-card-main { flex: 1; min-width: 0; }
+
+.training-card-title {
+  margin: 0 0 4px;
+  font-size: 14.5px;
+  font-weight: 700;
+}
+
+.training-card-meta {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--ink-soft);
+  line-height: 1.6;
+}
+
+.training-card-archived-badge {
+  display: inline-block;
+  margin-left: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ink-soft);
+  background: var(--surface-muted);
+  padding: 2px 8px;
+  border-radius: 999px;
+  vertical-align: middle;
+}
+
+.training-card-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.training-card-actions button {
+  border: 1px solid var(--line);
+  background: var(--paper);
+  color: var(--ink-soft);
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 7px 12px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+}
+
+.training-card-actions button:hover { border-color: var(--brand-color); color: var(--brand-color); }
+.training-card-actions button.is-danger:hover { border-color: var(--danger); color: var(--danger); }
+
+/* ---------- 등록/수정 폼 ---------- */
+.training-form-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 24, 33, 0.4);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0;
+  z-index: 50;
+}
+
+.training-form-panel {
+  width: 100%;
+  max-width: 480px;
+  max-height: 88vh;
+  overflow-y: auto;
+  background: var(--paper);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  padding: 26px 22px 30px;
+}
+
+@media (min-width: 640px) {
+  .training-form-overlay { align-items: center; padding: 20px; }
+  .training-form-panel { border-radius: var(--radius-lg); }
+}
+
+.training-form-title {
+  margin: 0 0 18px;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.training-form-error {
+  margin: 2px 0 14px;
+  font-size: 13px;
+  color: var(--danger);
+  background: var(--danger-bg);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+}
+
+.training-form-note {
+  margin: -6px 0 14px;
+  font-size: 12.5px;
+  color: var(--ink-soft);
+}
+
+.training-form-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 10px;
+}
+
+.training-form-actions .btn-ghost { margin-top: 0; }
+.training-form-actions .btn-primary { width: auto; padding: 13px 30px; }
+
+/* ============================================================
+   구성원관리 화면
+   ============================================================ */
+
+.admin-subheader-desc {
+  margin: 2px 0 0;
+  font-size: 13.5px;
+  color: var(--ink-soft);
+}
+
+.members-toolbar-buttons {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.member-list {
+  background: var(--paper);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  box-shadow: 0 1px 8px rgba(27, 35, 51, 0.04);
+}
+
+.member-card {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 18px;
+  border-top: 1px solid var(--line);
+}
+
+.member-card:first-child { border-top: none; }
+
+.member-card-main { flex: 1; min-width: 0; }
+
+.member-card-name {
+  margin: 0 0 4px;
+  font-size: 14.5px;
+  font-weight: 700;
+}
+
+.member-card-meta {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--ink-soft);
+}
+
+.member-type-badge {
+  display: inline-block;
+  margin-left: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--brand-color);
+  background: var(--surface-muted);
+  padding: 2px 8px;
+  border-radius: 999px;
+  vertical-align: middle;
+}
+
+.member-inactive-badge {
+  display: inline-block;
+  margin-left: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ink-soft);
+  background: var(--surface-muted);
+  padding: 2px 8px;
+  border-radius: 999px;
+  vertical-align: middle;
+}
+
+.member-card-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.member-card-actions button {
+  border: 1px solid var(--line);
+  background: var(--paper);
+  color: var(--ink-soft);
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 7px 12px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+}
+
+.member-card-actions button:hover { border-color: var(--brand-color); color: var(--brand-color); }
+.member-card-actions button.is-danger:hover { border-color: var(--danger); color: var(--danger); }
+
+/* ============================================================
+   구성원 엑셀 일괄등록 (Phase 1: 검증/미리보기, Phase 2: 실제 저장)
+   ============================================================ */
+
+.excel-import-section {
+  background: var(--paper);
+  border-radius: var(--radius-md);
+  padding: 18px 18px 20px;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 8px rgba(27, 35, 51, 0.04);
+}
+
+.excel-import-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.excel-import-title {
+  margin: 0;
+  font-size: 15.5px;
+  font-weight: 700;
+}
+
+.excel-import-note {
+  margin: 0 0 16px;
+  font-size: 12.5px;
+  color: var(--ink-soft);
+  line-height: 1.6;
+}
+
+.excel-upload-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.excel-file-btn {
+  display: inline-block;
+  border: 1px solid var(--line);
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 9px 16px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+}
+
+.excel-file-btn:hover { border-color: var(--brand-color); color: var(--brand-color); }
+
+.excel-file-name {
+  flex: 1;
+  min-width: 120px;
+  font-size: 13px;
+  color: var(--ink-soft);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.excel-import-error {
+  margin: 12px 0 0;
+  font-size: 13px;
+  color: var(--danger);
+  background: var(--danger-bg);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+}
+
+.excel-preview {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+
+.excel-preview-summary-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.excel-preview-summary {
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.excel-preview-summary-row .btn-compact { flex-shrink: 0; }
+
+.excel-save-error {
+  margin: 0 0 14px;
+  font-size: 13px;
+  color: var(--danger);
+  background: var(--danger-bg);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+}
+
+.excel-save-error ul { margin: 6px 0 0; padding-left: 18px; }
+
+.excel-save-success {
+  margin: 0 0 14px;
+  font-size: 13px;
+  color: #1B7A43;
+  background: #E4F5EA;
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+}
+
+.excel-preview-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+
+.excel-preview-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+  white-space: nowrap;
+}
+
+.excel-preview-table th,
+.excel-preview-table td {
+  padding: 9px 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--line);
+}
+
+.excel-preview-table th {
+  background: var(--surface-muted);
+  font-weight: 700;
+  color: var(--ink-soft);
+}
+
+.excel-preview-table tr:last-child td { border-bottom: none; }
+
+.excel-status-badge {
+  display: inline-block;
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.excel-status-badge.is-new {
+  color: #1B7A43;
+  background: #E4F5EA;
+}
+
+.excel-status-badge.is-update {
+  color: var(--brand-color);
+  background: var(--surface-muted);
+}
+
+.excel-status-badge.is-error {
+  color: var(--danger);
+  background: var(--danger-bg);
+}
+
+.excel-preview-table tr.excel-row-error td { background: var(--danger-bg); }
+
+.excel-preview-disclaimer {
+  margin: 14px 0 0;
+  font-size: 12.5px;
+  color: #8A6D1E;
+  background: #FFF6DF;
+  border: 1px solid #F0E0AC;
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+}
+
+/* 엑셀 파일 드래그 앤 드롭 영역 */
+.excel-dropzone {
+  border: 1.5px dashed var(--line);
+  border-radius: var(--radius-sm);
+  padding: 14px;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.excel-dropzone.is-dragover {
+  border-color: var(--brand-color);
+  background: var(--surface-muted);
+}
+
+.excel-drop-hint {
+  font-size: 12.5px;
+  color: var(--ink-soft);
+}

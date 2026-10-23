@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>연수 전자서명 시스템 - 관리자</title>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<!-- 기존 style.css의 색상/타이포 등 공통 디자인 토큰을 그대로 재사용합니다 -->
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="admin.css">
+<link rel="stylesheet" href="admin-print.css">
+</head>
+<body class="admin-body">
+
+  <div class="admin-page">
+
+    <!-- ============ 상태: 확인 중 ============ -->
+    <section class="admin-state" id="adminStateLoading">
+      <div class="spinner" aria-hidden="true"></div>
+      <p>로그인 상태를 확인하는 중입니다…</p>
+    </section>
+
+    <!-- ============ 로그인 화면 ============ -->
+    <section class="admin-login" id="adminLoginScreen" hidden>
+      <div class="admin-login-card">
+        <p class="admin-login-eyebrow">연수 전자서명 시스템</p>
+        <h1 class="admin-login-title">관리자 로그인</h1>
+
+        <form id="loginForm" novalidate>
+          <label class="field">
+            <span>이메일</span>
+            <input type="email" id="loginEmail" autocomplete="username" required>
+          </label>
+
+          <label class="field">
+            <span>비밀번호</span>
+            <input type="password" id="loginPassword" autocomplete="current-password" required>
+          </label>
+
+          <p class="admin-login-error" id="loginError" hidden></p>
+
+          <button type="submit" class="btn btn-primary" id="loginSubmitBtn">
+            로그인
+          </button>
+        </form>
+      </div>
+    </section>
+
+    <!-- ============ 관리자 홈 화면 ============ -->
+    <section class="admin-home" id="adminHomeScreen" hidden>
+
+      <header class="admin-header">
+        <div>
+          <p class="admin-header-eyebrow">연수 전자서명 시스템</p>
+          <h1 class="admin-header-title" id="adminOrgName">관리자</h1>
+        </div>
+        <button type="button" class="btn btn-ghost" id="logoutBtn">로그아웃</button>
+      </header>
+
+      <div class="admin-card">
+        <dl class="admin-info-list">
+          <div>
+            <dt>로그인 계정</dt>
+            <dd id="adminEmail">-</dd>
+          </div>
+          <div>
+            <dt>소속 학교</dt>
+            <dd id="adminOrgNameInline">-</dd>
+          </div>
+        </dl>
+      </div>
+
+      <div class="admin-menu-grid" id="adminMenuGrid">
+        <button type="button" class="admin-menu-card" data-menu-key="trainings" data-menu-label="연수관리">
+          <span class="admin-menu-card-title">연수관리</span>
+          <span class="admin-menu-card-desc">연수 등록·수정, 서명 가능 시간 설정, 월별 목록 확인, 보관 처리</span>
+        </button>
+        <button type="button" class="admin-menu-card" data-menu-key="members" data-menu-label="구성원관리">
+          <span class="admin-menu-card-title">구성원관리</span>
+          <span class="admin-menu-card-desc">부서별 구성원 등록·수정·삭제, 교원/교직원 구분 관리</span>
+        </button>
+      </div>
+
+    </section>
+
+    <!-- ============ 구성원관리 화면 ============ -->
+    <section class="admin-members" id="adminMembersScreen" hidden>
+
+      <header class="admin-subheader">
+        <button type="button" class="btn-link" id="membersBackBtn">&larr; 관리자 홈</button>
+        <h1 class="admin-subheader-title">구성원관리</h1>
+        <p class="admin-subheader-desc">우리 학교 구성원을 등록하고 관리합니다.</p>
+      </header>
+
+      <div class="trainings-toolbar">
+        <div class="members-toolbar-buttons">
+          <button type="button" class="btn btn-primary btn-compact" id="openMemberFormBtn">+ 구성원 추가</button>
+          <button type="button" class="btn-link" id="addDepartmentBtn">+ 부서 추가</button>
+        </div>
+        <label class="trainings-archived-toggle">
+          <input type="checkbox" id="showInactiveMembersCheckbox">
+          <span>비활성 구성원 포함</span>
+        </label>
+      </div>
+
+      <!-- ============ 구성원 엑셀 일괄등록 (Phase 1: 검증/미리보기, Phase 2: 실제 저장) ============ -->
+      <section class="excel-import-section" aria-labelledby="excelImportTitle">
+        <div class="excel-import-header">
+          <h2 class="excel-import-title" id="excelImportTitle">엑셀 일괄등록</h2>
+          <button type="button" class="btn btn-ghost btn-compact" id="downloadMemberTemplateBtn">엑셀 양식 다운로드</button>
+        </div>
+
+        <p class="excel-import-note">
+          엑셀 양식을 다운로드하여 이름·부서·구분을 입력한 후 업로드하세요.
+          엑셀에 현재 등록되어 있지 않은 부서명이 있으면 저장할 때 <strong>새 부서로 자동 생성</strong>됩니다
+          (오타 보정은 하지 않으므로, 아래 미리보기의 "신규 부서" 표시를 꼭 확인해주세요).
+          업로드해도 <strong>검증만 먼저 진행</strong>되며, 아래 "저장하기" 버튼을 직접 눌러야 실제로 반영됩니다.
+        </p>
+
+        <div class="excel-upload-row excel-dropzone" id="excelUploadRow">
+          <label class="excel-file-btn" for="memberExcelFileInput">엑셀 파일 선택</label>
+          <input type="file" id="memberExcelFileInput" accept=".xlsx" hidden>
+          <span class="excel-file-name" id="memberExcelFileName">선택된 파일 없음</span>
+          <button type="button" class="btn btn-primary btn-compact" id="validateMemberExcelBtn" disabled>검증하기</button>
+          <p class="excel-drop-hint">엑셀(.xlsx) 파일을 이 영역으로 끌어다 놓아도 됩니다.</p>
+        </div>
+
+        <p class="excel-import-error" id="excelImportError" hidden></p>
+
+        <div class="excel-preview" id="excelPreviewSection" hidden>
+          <div class="excel-preview-summary-row">
+            <p class="excel-preview-summary" id="excelPreviewSummary"></p>
+            <button type="button" class="btn btn-primary btn-compact" id="saveMemberExcelBtn" disabled>저장하기</button>
+          </div>
+
+          <p class="excel-save-error" id="excelSaveError" hidden></p>
+          <p class="excel-save-success" id="excelSaveSuccess" hidden></p>
+
+          <div class="excel-preview-table-wrap">
+            <table class="excel-preview-table">
+              <thead>
+                <tr>
+                  <th>행</th>
+                  <th>이름</th>
+                  <th>부서</th>
+                  <th>구분</th>
+                  <th>비고</th>
+                  <th>상태</th>
+                  <th>메시지</th>
+                </tr>
+              </thead>
+              <tbody id="excelPreviewTableBody"></tbody>
+            </table>
+          </div>
+          <p class="excel-preview-disclaimer" id="excelPreviewDisclaimer">⚠️ 이 화면은 미리보기입니다. "저장하기"를 눌러야 실제 구성원 정보에 반영됩니다. 오류가 있는 행이 하나라도 있으면 저장할 수 없습니다.</p>
+        </div>
+      </section>
+
+      <div class="month-filter" id="memberDeptFilter" hidden></div>
+
+      <div class="trainings-state" id="membersLoading">
+        <div class="spinner" aria-hidden="true"></div>
+        <p>구성원 목록을 불러오는 중입니다…</p>
+      </div>
+
+      <div class="trainings-state" id="membersError" hidden>
+        <p id="membersErrorMessage">구성원 목록을 불러오지 못했습니다.</p>
+      </div>
+
+      <div class="trainings-empty" id="membersEmpty" hidden>
+        <p>등록된 구성원이 없습니다.</p>
+        <button type="button" class="btn btn-primary btn-compact" id="emptyOpenMemberFormBtn">+ 구성원 추가</button>
+      </div>
+
+      <div class="member-list" id="memberList"></div>
+
+    </section>
+
+    <!-- ============ 연수관리 화면 (Phase 8) ============ -->
+    <section class="admin-trainings" id="adminTrainingsScreen" hidden>
+
+      <header class="admin-subheader">
+        <button type="button" class="btn-link" id="trainingsBackBtn">&larr; 관리자 홈</button>
+        <h1 class="admin-subheader-title">연수관리</h1>
+      </header>
+
+      <div class="trainings-toolbar">
+        <button type="button" class="btn btn-primary btn-compact" id="openTrainingFormBtn">+ 연수 등록</button>
+        <label class="trainings-archived-toggle">
+          <input type="checkbox" id="showArchivedCheckbox">
+          <span>보관된 연수 포함</span>
+        </label>
+      </div>
+
+      <div class="month-filter" id="monthFilter" hidden></div>
+
+      <div class="trainings-state" id="trainingsLoading">
+        <div class="spinner" aria-hidden="true"></div>
+        <p>연수 목록을 불러오는 중입니다…</p>
+      </div>
+
+      <div class="trainings-state" id="trainingsError" hidden>
+        <p id="trainingsErrorMessage">연수 목록을 불러오지 못했습니다.</p>
+      </div>
+
+      <div class="trainings-empty" id="trainingsEmpty" hidden>
+        <p>등록된 연수가 없습니다.</p>
+      </div>
+
+      <div class="training-month-groups" id="trainingGroups"></div>
+
+    </section>
+
+    <!-- ============ 서명 현황 화면 (연수관리 목록의 "서명 현황" 버튼으로 진입) ============ -->
+    <section class="admin-signatures" id="adminSignaturesScreen" hidden>
+
+      <header class="admin-subheader">
+        <button type="button" class="btn-link" id="signaturesBackBtn">&larr; 연수관리</button>
+        <h1 class="admin-subheader-title" id="sigTrainingTitle">서명 현황</h1>
+        <p class="admin-subheader-desc" id="sigTrainingMeta"></p>
+      </header>
+
+      <div class="sig-summary" id="sigSummary" hidden>
+        <div class="sig-summary-item">
+          <span class="sig-summary-label">전체 대상자</span>
+          <span class="sig-summary-value" id="sigTotalCount">0</span>
+        </div>
+        <div class="sig-summary-item is-signed">
+          <span class="sig-summary-label">서명 완료</span>
+          <span class="sig-summary-value" id="sigSignedCount">0</span>
+        </div>
+        <div class="sig-summary-item is-unsigned">
+          <span class="sig-summary-label">미서명</span>
+          <span class="sig-summary-value" id="sigUnsignedCount">0</span>
+        </div>
+      </div>
+
+      <p class="sig-note" id="sigNote" hidden></p>
+
+      <div class="sig-filters">
+        <input type="search" class="sig-search" id="sigSearchInput" placeholder="이름 또는 부서 검색" autocomplete="off">
+        <select class="sig-select" id="sigTypeFilter" aria-label="구분 필터">
+          <option value="">구분: 전체</option>
+          <option value="교원">교원</option>
+          <option value="교직원">교직원</option>
+        </select>
+        <div class="sig-status-filter" id="sigStatusFilter">
+          <button type="button" class="month-chip is-active" data-sig-status="all">전체</button>
+          <button type="button" class="month-chip" data-sig-status="signed">서명 완료</button>
+          <button type="button" class="month-chip" data-sig-status="unsigned">미서명</button>
+        </div>
+        <button type="button" class="btn-link" id="sigRefreshBtn">새로고침</button>
+      </div>
+
+      <div class="trainings-state" id="sigLoading">
+        <div class="spinner" aria-hidden="true"></div>
+        <p>서명 현황을 불러오는 중입니다…</p>
+      </div>
+
+      <div class="trainings-state" id="sigError" hidden>
+        <p id="sigErrorMessage">서명 현황을 불러오지 못했습니다.</p>
+      </div>
+
+      <div class="trainings-empty" id="sigEmpty" hidden>
+        <p id="sigEmptyMessage">대상자가 없습니다.</p>
+      </div>
+
+      <div class="member-list" id="sigList"></div>
+
+    </section>
+
+  </div>
+
+  <!-- ============ 구성원 등록/수정 폼 (오버레이) ============ -->
+  <div class="training-form-overlay" id="memberFormOverlay" hidden>
+    <div class="training-form-panel">
+      <h2 class="training-form-title" id="memberFormTitle">구성원 추가</h2>
+
+      <form id="memberForm" novalidate>
+        <label class="field">
+          <span>부서</span>
+          <select id="mfDepartment" required></select>
+        </label>
+
+        <label class="field">
+          <span>성명</span>
+          <input type="text" id="mfName" required>
+        </label>
+
+        <label class="field">
+          <span>구분</span>
+          <select id="mfMemberType" required>
+            <option value="교원">교원</option>
+            <option value="교직원">교직원</option>
+          </select>
+        </label>
+
+        <p class="training-form-error" id="memberFormError" hidden></p>
+
+        <div class="training-form-actions">
+          <button type="button" class="btn btn-ghost" id="memberFormCancelBtn">취소</button>
+          <button type="submit" class="btn btn-primary" id="memberFormSaveBtn">저장</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ============ 연수 등록/수정 폼 (오버레이) ============ -->
+  <div class="training-form-overlay" id="trainingFormOverlay" hidden>
+    <div class="training-form-panel">
+      <h2 class="training-form-title" id="trainingFormTitle">연수 등록</h2>
+
+      <form id="trainingForm" novalidate>
+        <label class="field">
+          <span>연수 제목</span>
+          <input type="text" id="tfTitle" required>
+        </label>
+
+        <label class="field">
+          <span>연수 날짜</span>
+          <input type="date" id="tfDate" required>
+        </label>
+
+        <label class="field">
+          <span>서명 시작 시간</span>
+          <div class="kst-time-selects">
+            <select id="tfSignStartAmpm" required>
+              <option value="AM">오전</option>
+              <option value="PM">오후</option>
+            </select>
+            <select id="tfSignStartHour" required></select>
+            <select id="tfSignStartMinute" required></select>
+          </div>
+        </label>
+
+        <label class="field">
+          <span>서명 종료 시간</span>
+          <div class="kst-time-selects">
+            <select id="tfSignEndAmpm" required>
+              <option value="AM">오전</option>
+              <option value="PM">오후</option>
+            </select>
+            <select id="tfSignEndHour" required></select>
+            <select id="tfSignEndMinute" required></select>
+          </div>
+        </label>
+        <p class="training-form-note">
+          서명 시작/종료는 위 "연수 날짜"와 합쳐져 저장됩니다 (한국 시간 기준). 오전/오후 → 시 → 분 순서로 선택해주세요.
+        </p>
+        <p class="training-form-warning" id="tfDateMismatchWarning" hidden>
+          ⚠️ 저장된 서명 시작/종료 시간의 날짜가 현재 "연수 날짜"와 다릅니다. 이대로 저장하면 위 연수 날짜 기준으로 다시 저장됩니다.
+        </p>
+
+        <label class="field">
+          <span>대상 유형</span>
+          <select id="tfTargetType">
+            <option value="교원">교원</option>
+            <option value="교직원" selected>교직원</option>
+          </select>
+        </label>
+        <p class="training-form-note" id="tfTargetTypeNote">
+          교원: 구분이 "교원"인 구성원만 대상입니다. 교직원: 교원과 교직원 구성원 전체가 대상입니다.
+        </p>
+
+        <p class="training-form-error" id="trainingFormError" hidden></p>
+
+        <div class="training-form-actions">
+          <button type="button" class="btn btn-ghost" id="trainingFormCancelBtn">취소</button>
+          <button type="submit" class="btn btn-primary" id="trainingFormSaveBtn">저장</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- 구성원 엑셀 일괄등록에서 사용하는 xlsx 읽기/쓰기 라이브러리 (SheetJS, CDN) -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="config.js"></script>
+  <script src="admin.js"></script>
+  <!-- 연수별 서명부 출력 (admin.js 다음에 불러와야 합니다) -->
+  <script src="admin-print.js"></script>
+</body>
+</html>

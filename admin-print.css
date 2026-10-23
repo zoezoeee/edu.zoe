@@ -1,0 +1,297 @@
+/* ============================================================
+   연수 전자서명 시스템 — 서명부 출력 전용 스타일 (admin-print.css)
+   ※ 모든 규칙은 .sigsheet-* 이름이거나 body.sigsheet-open 아래에서만
+     적용되어, 기존 관리자 화면 디자인에는 영향을 주지 않습니다.
+   ※ 색상/폰트 등 공통 토큰은 style.css / admin.css의 변수를 그대로 사용합니다.
+
+   [A4 세로 한 장 = 좌/우 2개 영역] 치수 기준 (admin-print.js의 ROWS_PER_SIDE_* 와 짝)
+     · 용지 210 × 297mm, @page 여백 10mm → 인쇄 가능 영역 190 × 277mm
+     · 서명부 폭 186mm (인쇄 가능 폭보다 4mm 좁게 → 가장자리 잘림 방지 여유)
+     · 한 영역 폭 93mm = 번호 9 + 부서 23 + 성명 17 + 서명 28 + 비고 16
+     · 행 높이 8.6mm, 열 제목 행 7mm
+       첫 쪽:  제목/연수 정보 ≈25mm + 열 제목 7mm + 27행 232mm ≈ 264mm  (< 277mm)
+       다음 쪽: 머리글 ≈10mm + 열 제목 7mm + 29행 249mm ≈ 266mm      (< 277mm)
+   ============================================================ */
+
+/* 연수 카드 버튼이 많아져도 좁은 화면에서 넘치지 않도록 줄바꿈만 허용 */
+.training-card-actions { flex-wrap: wrap; justify-content: flex-end; }
+
+/* ---------- 화면: 서명부 미리보기 ---------- */
+.sigsheet-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  background: #E8EBF1;
+  font-family: inherit;
+  color: #000;
+}
+
+.sigsheet-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 12px 18px;
+  background: var(--paper, #fff);
+  border-bottom: 1px solid var(--line, #DDE1E8);
+}
+
+.sigsheet-toolbar-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  font-size: 15px;
+}
+
+.sigsheet-status {
+  font-size: 12.5px;
+  color: var(--ink-soft, #5B6577);
+}
+
+.sigsheet-toolbar-actions { display: flex; gap: 8px; }
+.sigsheet-toolbar-actions .btn { margin-top: 0; }
+
+.sigsheet-notices { padding: 0 18px; }
+
+.sigsheet-notice {
+  margin: 10px auto 0;
+  max-width: 210mm;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--ink-soft, #5B6577);
+  background: var(--paper, #fff);
+  border: 1px solid var(--line, #DDE1E8);
+  border-radius: 8px;
+  padding: 9px 12px;
+}
+
+.sigsheet-notice.is-error {
+  color: var(--danger, #C0392B);
+  background: var(--danger-bg, #FDECEA);
+  border-color: transparent;
+}
+
+.sigsheet-scroll {
+  flex: 1;
+  overflow: auto;
+  padding: 16px 12px 40px;
+}
+
+/* 화면에서 보이는 A4 용지들 (쪽마다 한 장) */
+.sigsheet-pages {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.sigsheet-page {
+  box-sizing: border-box;
+  flex: none;
+  width: 210mm;
+  height: 297mm;
+  margin: 0 auto;            /* 화면이 좁으면 왼쪽부터 보이고 가로 스크롤 */
+  padding: 10mm 12mm;        /* 안쪽 폭 186mm, 안쪽 높이 277mm */
+  background: #fff;
+  box-shadow: 0 2px 18px rgba(27, 35, 51, 0.15);
+  overflow: hidden;
+  color: #000;
+  font-size: 9.5pt;
+}
+
+/* --- 첫 쪽 상단: 제목 + 연수 정보 */
+.sigsheet-header { margin-bottom: 2mm; }
+
+.sigsheet-title {
+  margin: 0;
+  height: 11mm;
+  line-height: 11mm;
+  text-align: center;
+  font-size: 17pt;
+  font-weight: 700;
+  letter-spacing: 0.25em;
+}
+
+.sigsheet-meta-line {
+  display: flex;
+  align-items: baseline;
+  margin: 0;
+  min-height: 6mm;
+  line-height: 1.35;
+  font-size: 10.5pt;
+}
+
+.sigsheet-meta-split { justify-content: space-between; gap: 6mm; }
+.sigsheet-meta-left { display: flex; align-items: baseline; min-width: 0; }
+.sigsheet-meta-label { margin-right: 2mm; font-weight: 700; white-space: nowrap; }
+.sigsheet-meta-value { min-width: 0; overflow-wrap: anywhere; }
+.sigsheet-school { flex: none; font-weight: 700; white-space: nowrap; }
+
+/* --- 둘째 쪽 이후 상단: 짧은 머리글 */
+.sigsheet-page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6mm;
+  height: 8mm;
+  margin-bottom: 2mm;
+  font-size: 9.5pt;
+}
+
+.sigsheet-page-header-title { min-width: 0; font-weight: 700; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.sigsheet-page-header-info { flex: none; color: #333; white-space: nowrap; }
+
+/* --- 서명 표: 좌/우 2개 영역(번호·부서·성명·서명·비고 ×2)
+   테두리가 칸 "안쪽"에 그려지도록 border-collapse: separate 를 쓰고,
+   표 폭을 186mm로 고정합니다(열 너비 합 = 표 폭). */
+.sigsheet-table {
+  box-sizing: border-box;
+  width: 186mm;
+  table-layout: fixed;
+  border-collapse: separate;
+  border-spacing: 0;
+  border-top: 0.35mm solid #000;
+  border-left: 0.35mm solid #000;
+  font-size: 9.5pt;
+}
+
+.sigsheet-col-no   { width: 9mm; }
+.sigsheet-col-dept { width: 23mm; }
+.sigsheet-col-name { width: 17mm; }
+.sigsheet-col-sign { width: 28mm; }
+.sigsheet-col-note { width: 16mm; }
+
+.sigsheet-table th,
+.sigsheet-table td {
+  box-sizing: border-box;
+  height: 8.6mm;
+  padding: 0.3mm 1mm;
+  border-right: 0.25mm solid #000;
+  border-bottom: 0.25mm solid #000;
+  text-align: center;
+  vertical-align: middle;
+  line-height: 1.15;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+  overflow: hidden;
+}
+
+.sigsheet-table thead th {
+  height: 7mm;
+  background: #E3E9F1;
+  font-weight: 700;
+}
+
+/* 바깥 테두리는 조금 굵게, 왼쪽 영역 끝의 오른쪽 선은 구분선과 겹치지 않게 생략 */
+.sigsheet-table tr > :nth-child(5)  { border-right: none; }
+.sigsheet-table tr > :nth-child(10) { border-right-width: 0.35mm; }
+.sigsheet-table tbody tr:last-child td { border-bottom-width: 0.35mm; }
+.sigsheet-table thead th { border-bottom-width: 0.35mm; }
+.sigsheet-split { border-left: 0.35mm solid #000 !important; }
+
+.sigsheet-table tr > :nth-child(1),
+.sigsheet-table tr > :nth-child(6) {
+  padding-left: 0.3mm;
+  padding-right: 0.3mm;
+  white-space: nowrap;
+  word-break: normal;
+}
+
+.sigsheet-cell-dept { font-size: 8pt; }
+.sigsheet-cell-name { font-size: 9.5pt; font-weight: 500; }
+
+/* 서명 이미지: 비율 유지, 칸을 벗어나지 않음 */
+.sigsheet-sign-img {
+  display: block;
+  max-width: 100%;
+  max-height: 7.4mm;
+  width: auto;
+  height: auto;
+  margin: 0 auto;
+  object-fit: contain;
+}
+
+.sigsheet-sign-note {
+  display: block;
+  font-size: 6.5pt;
+  line-height: 1.15;
+  color: #555;
+}
+
+.sigsheet-sign-note.is-fail { color: #B03A2E; }
+
+.sigsheet-empty {
+  margin: 10mm 0 0;
+  text-align: center;
+  font-size: 11pt;
+  color: #555;
+}
+
+/* ---------- 인쇄: A4 세로, 서명부만 출력 ---------- */
+@page {
+  size: A4 portrait;
+  margin: 10mm;
+}
+
+@media print {
+  /* 서명부 미리보기가 열려 있을 때만: 관리자 화면 전체를 숨기고 서명부만 출력 */
+  body.sigsheet-open > *:not(#sigSheetOverlay) { display: none !important; }
+
+  html, body.sigsheet-open {
+    margin: 0;
+    padding: 0;
+    background: #fff !important;
+  }
+
+  body.sigsheet-open .sigsheet-overlay {
+    position: static;
+    display: block;
+    height: auto;
+    overflow: visible;
+    background: #fff;
+  }
+
+  /* 툴바, 화면용 안내, 상태 표시는 인쇄하지 않음 */
+  body.sigsheet-open .sigsheet-toolbar,
+  body.sigsheet-open .sigsheet-notices { display: none !important; }
+
+  body.sigsheet-open .sigsheet-scroll {
+    overflow: visible;
+    padding: 0;
+  }
+
+  body.sigsheet-open .sigsheet-pages {
+    display: block;
+    gap: 0;
+  }
+
+  /* 쪽마다 한 장: 폭 186mm 고정(인쇄 가능 폭 190mm보다 좁음), 쪽 사이에서 강제 줄바꿈 */
+  body.sigsheet-open .sigsheet-page {
+    width: 186mm;
+    height: auto;
+    margin: 0 auto;
+    padding: 0;
+    box-shadow: none;
+    overflow: visible;
+    break-after: page;
+    page-break-after: always;
+    break-inside: avoid;
+  }
+
+  body.sigsheet-open .sigsheet-page:last-child {
+    break-after: auto;
+    page-break-after: auto;
+  }
+
+  body.sigsheet-open .sigsheet-table thead { display: table-header-group; }
+  body.sigsheet-open .sigsheet-table tr { break-inside: avoid; page-break-inside: avoid; }
+
+  /* 배경색이 있는 열 제목도 그대로 인쇄 */
+  body.sigsheet-open .sigsheet-table thead th {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
