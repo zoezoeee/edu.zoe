@@ -35,6 +35,7 @@ const el = {
   stateLoading: document.getElementById('stateLoading'),
   stateLinkError: document.getElementById('stateLinkError'),
   linkErrorMessage: document.getElementById('linkErrorMessage'),
+  stateWelcome: document.getElementById('stateWelcome'),
   stateForm: document.getElementById('stateForm'),
   stateSubmitting: document.getElementById('stateSubmitting'),
   stateSubmitError: document.getElementById('stateSubmitError'),
@@ -97,7 +98,7 @@ function showOnly(sectionEl) {
   const all = [
     el.stateLoading, el.stateLinkError, el.stateForm,
     el.stateSubmitting, el.stateSubmitError, el.stateSuccess,
-    el.stateMain,
+    el.stateMain, el.stateWelcome,
   ];
   all.forEach((s) => { s.hidden = s !== sectionEl; });
 
@@ -120,6 +121,15 @@ function showDevNoteIfNeeded() {
 // 1. 초기 진입: 링크 유효성부터 확인
 // ============================================================
 async function init() {
+  // 기본 주소(학교/연수 정보가 주소에 전혀 없음) → 오류가 아니라 안내 화면.
+  //  - org / training 파라미터 자체가 없을 때만 해당합니다 (특정 학교 코드를 기본값으로 쓰지 않음).
+  //  - ?org= 처럼 파라미터는 있는데 값이 비었거나, training만 있는 경우 등
+  //    잘못된 주소는 아래의 기존 오류 처리를 그대로 탑니다.
+  if (!urlParams.has('org') && !urlParams.has('training')) {
+    showOnly(el.stateWelcome);
+    return;
+  }
+
   if (!ORG_CODE || !TRAINING_ID) {
     el.linkErrorMessage.textContent =
       '연수 링크에 필요한 정보가 없습니다. 안내받은 링크를 다시 확인해주세요.';
