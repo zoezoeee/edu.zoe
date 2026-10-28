@@ -1,0 +1,128 @@
+/* ============================================================
+   연수 전자서명 시스템 — 관리자 추가 기능 스타일 (admin-extras.css)
+   · 연수 전자서명 공유(학교 공통 주소 / QR코드) 영역
+   · 구성원관리의 부서 삭제 줄
+   ※ 새 이름(.share-*, .dept-delete-*)만 사용하며, 색상/폰트 등 공통 토큰은
+     style.css / admin.css의 변수를 그대로 사용합니다.
+   ============================================================ */
+
+/* ---------- 연수 전자서명 공유 ---------- */
+.share-panel {
+  background: var(--paper);
+  border-radius: var(--radius-md);
+  padding: 20px;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 10px rgba(27, 35, 51, 0.05);
+}
+
+.share-title {
+  margin: 0 0 4px;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.share-desc {
+  margin: 0 0 14px;
+  font-size: 13px;
+  color: var(--ink-soft);
+  line-height: 1.55;
+}
+
+.share-panel .share-address {
+  width: 100%;
+  box-sizing: border-box;
+  font-size: 14px;
+  color: var(--ink);
+  background: var(--surface-muted);
+  text-overflow: ellipsis;
+}
+
+.share-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.share-actions .btn { margin-top: 0; }
+
+.share-status {
+  margin: 12px 0 0;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--ink-soft);
+}
+
+.share-status.is-ok { color: #1F7A3F; }
+.share-status.is-warn { color: #8A6D1E; }
+.share-status.is-error { color: var(--danger); }
+
+.share-qr {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 18px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+
+.share-qr-img {
+  display: block;
+  width: 200px;
+  height: 200px;
+  max-width: 100%;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  image-rendering: pixelated;
+}
+
+.share-qr-side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 200px;
+  flex: 1;
+}
+
+.share-qr-caption {
+  margin: 0;
+  font-size: 13px;
+  color: var(--ink-soft);
+  line-height: 1.55;
+}
+
+.share-qr-side .btn { margin-top: 0; }
+
+/* ---------- 구성원관리: 부서 삭제 줄 ---------- */
+.dept-delete-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: -8px 0 16px;
+  padding: 10px 14px;
+  font-size: 13.5px;
+  color: var(--ink-soft);
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+
+.dept-delete-name { color: var(--ink); }
+
+.dept-delete-btn { color: var(--danger); }
+.dept-delete-btn:hover { color: var(--danger); text-decoration: underline; }
+.dept-delete-btn:disabled { opacity: 0.5; cursor: default; text-decoration: none; }
+
+.dept-delete-result {
+  margin: -8px 0 16px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--ink-soft);
+}
+
+.dept-delete-result.is-ok { color: #1F7A3F; }

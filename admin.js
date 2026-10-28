@@ -1435,8 +1435,8 @@ function parseMemberExcelFile(file) {
   });
 }
 
-// 현재 학교(org)의 전체 구성원·전체 부서를 새로 조회 (매칭 정확도를 위해
-// "비활성 구성원 포함" 체크박스 상태와 무관하게 전체를 가져옵니다)
+// 현재 학교(org)의 전체 구성원·활성 부서를 새로 조회 (매칭 정확도를 위해
+// "비활성 구성원 포함" 체크박스 상태와 무관하게 전체 구성원을 가져옵니다)
 async function fetchAllMembersAndDepartmentsForMatching() {
   const [{ data: members, error: memberError }, { data: departments, error: deptError }] = await Promise.all([
     supabaseClient
@@ -1446,7 +1446,8 @@ async function fetchAllMembersAndDepartmentsForMatching() {
     supabaseClient
       .from('departments')
       .select('id, name')
-      .eq('org_id', currentAdmin.orgId),
+      .eq('org_id', currentAdmin.orgId)
+      .eq('is_active', true), // 삭제(비활성화)된 부서는 일괄등록에서 "없는 부서"로 취급 (bulk_import_members RPC와 같은 기준)
   ]);
 
   if (memberError) throw memberError;
