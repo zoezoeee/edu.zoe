@@ -202,9 +202,11 @@ function renderTrainingInfo(training) {
 // 3. 부서 → 성명 선택
 // ============================================================
 function renderDepartmentOptions(targets) {
+  // 부서 순서는 서버(get_training_targets)가 관리자가 지정한 순서대로 보내 주므로,
+  // 여기서 다시 정렬하지 않고 처음 나온 순서를 그대로 사용합니다.
   const departmentNames = [...new Set(
     targets.map((t) => t.department_name || '부서 미지정')
-  )].sort((a, b) => a.localeCompare(b, 'ko'));
+  )];
 
   el.departmentSelect.innerHTML =
     '<option value="">부서를 선택해주세요</option>' +
@@ -221,9 +223,9 @@ el.departmentSelect.addEventListener('change', () => {
     return;
   }
 
+  // 구성원 순서도 서버가 보낸 순서(관리자가 지정한 순서)를 그대로 사용합니다.
   const members = state.targets
-    .filter((t) => (t.department_name || '부서 미지정') === dept)
-    .sort((a, b) => a.member_name.localeCompare(b.member_name, 'ko'));
+    .filter((t) => (t.department_name || '부서 미지정') === dept);
 
   el.memberSelect.innerHTML =
     '<option value="">성명을 선택해주세요</option>' +

@@ -3,6 +3,7 @@
 //
 //   1) 관리자 홈: "연수 전자서명 공유" — 학교 공통 주소 표시 / 링크 복사 / QR코드 생성·PNG 저장
 //   2) 구성원관리: 선택한 부서를 소속 구성원과 함께 삭제 (과거 서명 기록은 보존)
+//   3) 구성원관리: 부서 순서 변경, 부서 안 구성원 순서 변경(▲▼) — 서버(DB)에 저장
 //
 //  ★ admin.js를 수정하지 않습니다. admin.js가 만든 전역 값(currentAdmin, membersState,
 //    supabaseClient)과 함수(renderAdminHome, renderDeptFilter, loadDepartmentsAndMembers)를
@@ -306,7 +307,7 @@
   // ==========================================================
   //  2. 구성원관리 — 선택한 부서를 소속 구성원과 함께 삭제
   // ==========================================================
-  const deptDelete = { bar: null, nameEl: null, btn: null, result: null, busy: false };
+  const deptDelete = { bar: null, nameEl: null, btn: null, result: null, hint: null, busy: false };
 
   function ensureDeptDeleteBar() {
     if (deptDelete.bar && document.body.contains(deptDelete.bar)) return true;
@@ -330,8 +331,14 @@
     result.setAttribute('role', 'status');
     result.hidden = true;
 
+    const hint = make('p', 'order-hint');
+    hint.id = 'memberOrderHint';
+    hint.hidden = true;
+
     filter.insertAdjacentElement('afterend', bar);
     bar.insertAdjacentElement('afterend', result);
+    result.insertAdjacentElement('afterend', hint);
+    deptDelete.hint = hint;
 
     deptDelete.bar = bar;
     deptDelete.nameEl = nameEl;
@@ -358,6 +365,34 @@
       deptDelete.nameEl.textContent = dept.name;
       showDeptDeleteResult('');   // 다른 작업을 시작하면 이전 결과 안내는 지움
     }
+    updateOrderHint();
+  }
+
+  function updateOrderHint() {
+    if (!deptDelete.hint) return;
+    if (membersState.departments.length === 0) {
+      deptDelete.hint.hidden = true;
+      return;
+    }
+    deptDelete.hint.hidden = false;
+    deptDelete.hint.textContent = membersState.selectedDeptId
+      ? '구성원 오른쪽의 ▲▼ 버튼으로 순서를 바꾸면 바로 저장되고, 서명 화면에도 같은 순서로 표시됩니다.'
+      : '부서 버튼을 눌러 부서를 선택하면 그 부서 구성원의 순서를 ▲▼ 버튼으로 바꿀 수 있습니다.';
+  }
+
+  // 서명 기록이 있는 구성원 ID 집합 (서명 이력이 있는 구성원은 삭제되지 않으므로 안내에 필요)
+  async function findMembersWithSignatures(memberIds) {
+    const withSignatures = new Set();
+    for (let i = 0; i < memberIds.length; i += 50) {
+      const chunk = memberIds.slice(i, i + 50);
+      const { data, error } = await supabaseClient
+        .from('signatures')
+        .select('member_id')
+        .in('member_id', chunk);
+      if (error) throw error;
+      (data || []).forEach((row) => withSignatures.add(row.member_id));
+    }
+    return withSignatures;
   }
 
   async function onDeleteSelectedDepartment() {
@@ -375,7 +410,7 @@
     showDeptDeleteResult('');
 
     try {
-      // 1) 삭제 대상 구성원 수 확인 (이 학교, 이 부서만)
+      // 1) 삭제 대상 구성원과 서명 기록 유무 확인 (이 학교, 이 부서만)
       const { data: members, error: countError } = await supabaseClient
         .from('members')
         .select('id, is_active')
@@ -383,20 +418,33 @@
         .eq('department_id', deptId);
 
       if (countError) {
-        console.error('부서 구성원 수 조회 오류:', countError);
+        console.error('부서 구성원 조회 오류:', countError);
         window.alert('부서 정보를 확인하지 못했습니다. 인터넷 연결을 확인한 후 다시 시도해주세요.');
         return;
       }
 
-      const activeCount = (members || []).filter((m) => m.is_active).length;
+      const activeIds = (members || []).filter((m) => m.is_active).map((m) => m.id);
+      let signedCount;
+      try {
+        signedCount = (await findMembersWithSignatures(activeIds)).size;
+      } catch (err) {
+        console.error('서명 기록 확인 오류:', err);
+        window.alert('서명 기록을 확인하지 못해 삭제를 진행하지 않았습니다. 인터넷 연결을 확인한 후 다시 시도해주세요.');
+        return;
+      }
+      const unsignedCount = activeIds.length - signedCount;
 
       // 2) 최종 확인
+      let detail = '';
+      if (unsignedCount > 0) detail += '  · 서명 기록이 없는 ' + unsignedCount + '명: 구성원 정보가 완전히 삭제됩니다.\n';
+      if (signedCount > 0) detail += '  · 서명 기록이 있는 ' + signedCount + '명: 서명 이력 보존을 위해 삭제하지 않고 목록에서만 숨깁니다.\n';
       const confirmed = window.confirm(
         '이 부서를 삭제하시겠습니까?\n\n' +
         '삭제 대상 부서: ' + dept.name + '\n' +
-        '소속 구성원: ' + activeCount + '명\n\n' +
-        '※ 이 부서와 소속 구성원이 함께 삭제됩니다. 삭제된 구성원은 구성원 목록에서 사라집니다.\n' +
-        '※ 과거 연수 서명 기록은 그대로 보존됩니다.'
+        '소속 구성원: ' + activeIds.length + '명\n' +
+        detail + '\n' +
+        '※ 과거 연수 서명 기록은 그대로 보존됩니다.\n' +
+        (unsignedCount > 0 ? '※ 삭제된 구성원 정보는 복구할 수 없습니다.' : '')
       );
       if (!confirmed) return;
 
@@ -422,11 +470,21 @@
       // 4) 목록 갱신 후 결과 안내
       membersState.selectedDeptId = null;
       await loadDepartmentsAndMembers();
-      showDeptDeleteResult(
-        '"' + data.department_name + '" 부서와 소속 구성원 ' + data.deleted_member_count +
-        '명을 삭제했습니다. 과거 서명 기록은 그대로 보존됩니다.',
-        'ok'
-      );
+      if (data.kept_member_count === undefined) {
+        // 서버 함수가 예전 버전(구성원을 삭제하지 않고 비활성화만 함)인 경우
+        showDeptDeleteResult(
+          '"' + data.department_name + '" 부서를 삭제했습니다. 단, 서버 함수가 이전 버전이라 구성원 ' +
+          data.deleted_member_count + '명은 삭제되지 않고 비활성화되었습니다. 12_department_delete_v2.sql을 실행해주세요.',
+          'warn'
+        );
+      } else {
+        showDeptDeleteResult(
+          '"' + data.department_name + '" 부서를 삭제했습니다. 구성원 ' + data.deleted_member_count + '명을 삭제했고' +
+          (data.kept_member_count > 0 ? ', 서명 기록이 있는 ' + data.kept_member_count + '명은 서명 이력 보존을 위해 목록에서만 숨겼습니다.' : '.') +
+          ' 과거 서명 기록은 그대로 보존됩니다.',
+          'ok'
+        );
+      }
     } catch (err) {
       console.error('부서 삭제 오류:', err);
       window.alert('부서 삭제 중 문제가 발생했습니다. 인터넷 연결을 확인한 후 다시 시도해주세요.');
@@ -452,6 +510,253 @@
     console.warn('admin-extras.js: renderDeptFilter를 찾지 못해 부서 삭제 영역을 추가하지 않았습니다.');
   }
 
+  // ==========================================================
+  //  3. 구성원관리 — 부서 순서 변경 / 구성원 순서 변경 (DB에 저장)
+  //     · 순서는 서버 함수(reorder_departments / reorder_members)가 한 번에(트랜잭션) 저장합니다.
+  //     · 서버가 로그인한 관리자의 학교인지, 목록이 현재 상태와 맞는지 확인합니다.
+  // ==========================================================
+  let orderBusy = false;
+
+  function describeRpcError(error, fallbackMessage) {
+    const text = String((error && (error.message || error.details)) || '');
+    if ((error && error.code === 'PGRST202') || /Could not find the function|schema cache/i.test(text)) {
+      return '이 기능에 필요한 데이터베이스 설정(SQL)이 아직 적용되지 않았습니다. 안내받은 SQL 파일을 먼저 실행해주세요.';
+    }
+    return fallbackMessage;
+  }
+
+  // ---------- 구성원 순서: 구성원 줄의 ▲▼ ----------
+  function activeMembersOfSelectedDept() {
+    const deptId = membersState.selectedDeptId;
+    return membersState.all.filter((m) => m.is_active && m.department_id === deptId);
+  }
+
+  async function moveMember(member, delta) {
+    if (orderBusy) return;
+    const list = activeMembersOfSelectedDept();
+    const from = list.findIndex((m) => m.id === member.id);
+    const to = from + delta;
+    if (from < 0 || to < 0 || to >= list.length) return;
+
+    const ids = list.map((m) => m.id);
+    [ids[from], ids[to]] = [ids[to], ids[from]];
+
+    orderBusy = true;
+    document.querySelectorAll('.member-move-btn').forEach((b) => { b.disabled = true; });
+    const scrollY = window.scrollY;
+
+    try {
+      const { data, error } = await supabaseClient.rpc('reorder_members', {
+        p_department_id: membersState.selectedDeptId,
+        p_ordered_ids: ids,
+      });
+      if (error) {
+        console.error('구성원 순서 저장 오류:', error);
+        window.alert(describeRpcError(error, '구성원 순서를 저장하지 못했습니다. 인터넷 연결을 확인한 후 다시 시도해주세요.'));
+      } else if (!data || !data.success) {
+        window.alert((data && data.message) || '구성원 순서를 저장하지 못했습니다.');
+      }
+      // 성공/실패와 관계없이 서버의 실제 순서로 화면을 다시 맞춤
+      await loadDepartmentsAndMembers();
+      window.scrollTo(0, scrollY);
+    } catch (err) {
+      console.error('구성원 순서 변경 오류:', err);
+      window.alert('구성원 순서를 저장하지 못했습니다. 인터넷 연결을 확인한 후 다시 시도해주세요.');
+    } finally {
+      orderBusy = false;
+    }
+  }
+
+  // 구성원 카드(admin.js의 renderMemberCard)에 ▲▼ 버튼을 덧붙입니다.
+  // 부서 하나를 선택했을 때, 그 부서의 "활성" 구성원에게만 표시됩니다.
+  if (typeof window.renderMemberCard === 'function') {
+    const originalRenderMemberCard = window.renderMemberCard;
+    window.renderMemberCard = function (member) {
+      const card = originalRenderMemberCard.apply(this, arguments);
+      try {
+        const deptId = membersState.selectedDeptId;
+        if (deptId && member.is_active && member.department_id === deptId) {
+          const list = activeMembersOfSelectedDept();
+          const index = list.findIndex((m) => m.id === member.id);
+          const actions = card.querySelector('.member-card-actions');
+          if (actions && index >= 0) {
+            const up = make('button', 'member-move-btn', '▲');
+            up.type = 'button';
+            up.dataset.action = 'move-up';
+            up.title = '위로 이동';
+            up.setAttribute('aria-label', member.name + ' 위로 이동');
+            up.disabled = index === 0;
+            up.addEventListener('click', () => moveMember(member, -1));
+
+            const down = make('button', 'member-move-btn', '▼');
+            down.type = 'button';
+            down.dataset.action = 'move-down';
+            down.title = '아래로 이동';
+            down.setAttribute('aria-label', member.name + ' 아래로 이동');
+            down.disabled = index === list.length - 1;
+            down.addEventListener('click', () => moveMember(member, 1));
+
+            actions.insertBefore(down, actions.firstChild);
+            actions.insertBefore(up, actions.firstChild);
+          }
+        }
+      } catch (err) {
+        console.error('구성원 순서 버튼 추가 오류:', err);
+      }
+      return card;
+    };
+  } else {
+    console.warn('admin-extras.js: renderMemberCard를 찾지 못해 구성원 순서 버튼을 추가하지 않았습니다.');
+  }
+
+  // ---------- 부서 순서: "부서 순서 변경" 창 ----------
+  const deptOrder = { overlay: null, items: [], listEl: null, errorEl: null, saveBtn: null, busy: false };
+
+  function renderDeptOrderList() {
+    deptOrder.listEl.textContent = '';
+    deptOrder.items.forEach((item, index) => {
+      const row = make('li', 'order-row');
+      row.appendChild(make('span', 'order-row-no', String(index + 1)));
+      row.appendChild(make('span', 'order-row-name', item.name));
+
+      const up = make('button', 'member-move-btn', '▲');
+      up.type = 'button';
+      up.title = '위로 이동';
+      up.setAttribute('aria-label', item.name + ' 위로 이동');
+      up.disabled = index === 0 || deptOrder.busy;
+      up.addEventListener('click', () => moveDeptItem(index, -1));
+
+      const down = make('button', 'member-move-btn', '▼');
+      down.type = 'button';
+      down.title = '아래로 이동';
+      down.setAttribute('aria-label', item.name + ' 아래로 이동');
+      down.disabled = index === deptOrder.items.length - 1 || deptOrder.busy;
+      down.addEventListener('click', () => moveDeptItem(index, 1));
+
+      row.appendChild(up);
+      row.appendChild(down);
+      deptOrder.listEl.appendChild(row);
+    });
+  }
+
+  function moveDeptItem(index, delta) {
+    const to = index + delta;
+    if (to < 0 || to >= deptOrder.items.length) return;
+    const items = deptOrder.items;
+    [items[index], items[to]] = [items[to], items[index]];
+    renderDeptOrderList();
+  }
+
+  function closeDeptOrderPanel() {
+    if (deptOrder.overlay) {
+      deptOrder.overlay.remove();
+      deptOrder.overlay = null;
+    }
+    document.removeEventListener('keydown', onDeptOrderKeydown);
+  }
+
+  function onDeptOrderKeydown(evt) {
+    if (evt.key === 'Escape' && !deptOrder.busy) closeDeptOrderPanel();
+  }
+
+  function openDeptOrderPanel() {
+    if (deptOrder.overlay) return;
+    const departments = membersState.departments || [];
+    if (departments.length < 2) {
+      window.alert('순서를 바꿀 부서가 2개 이상 있어야 합니다.');
+      return;
+    }
+    deptOrder.items = departments.map((d) => ({ id: d.id, name: d.name }));
+    deptOrder.busy = false;
+
+    const overlay = make('div', 'training-form-overlay');
+    overlay.id = 'deptOrderOverlay';
+    overlay.setAttribute('role', 'dialog');
+    overlay.setAttribute('aria-modal', 'true');
+    overlay.setAttribute('aria-label', '부서 순서 변경');
+
+    const panel = make('div', 'training-form-panel');
+    panel.appendChild(make('h2', 'training-form-title', '부서 순서 변경'));
+    panel.appendChild(make('p', 'order-panel-desc',
+      '▲▼ 버튼으로 부서 순서를 바꾼 뒤 "저장"을 눌러주세요. 저장한 순서는 구성원관리와 서명 화면의 부서 목록에 같은 순서로 표시됩니다.'));
+
+    const list = make('ol', 'order-list');
+    deptOrder.listEl = list;
+    panel.appendChild(list);
+
+    const errorEl = make('p', 'training-form-error');
+    errorEl.hidden = true;
+    deptOrder.errorEl = errorEl;
+    panel.appendChild(errorEl);
+
+    const actions = make('div', 'training-form-actions');
+    const cancelBtn = make('button', 'btn btn-ghost', '취소');
+    cancelBtn.type = 'button';
+    cancelBtn.addEventListener('click', () => { if (!deptOrder.busy) closeDeptOrderPanel(); });
+    const saveBtn = make('button', 'btn btn-primary', '저장');
+    saveBtn.type = 'button';
+    saveBtn.id = 'deptOrderSaveBtn';
+    saveBtn.addEventListener('click', saveDeptOrder);
+    deptOrder.saveBtn = saveBtn;
+    actions.appendChild(cancelBtn);
+    actions.appendChild(saveBtn);
+    panel.appendChild(actions);
+
+    overlay.appendChild(panel);
+    document.body.appendChild(overlay);
+    deptOrder.overlay = overlay;
+    document.addEventListener('keydown', onDeptOrderKeydown);
+    renderDeptOrderList();
+  }
+
+  async function saveDeptOrder() {
+    if (deptOrder.busy) return;
+    deptOrder.busy = true;
+    deptOrder.saveBtn.disabled = true;
+    deptOrder.errorEl.hidden = true;
+    renderDeptOrderList();
+
+    try {
+      const { data, error } = await supabaseClient.rpc('reorder_departments', {
+        p_ordered_ids: deptOrder.items.map((item) => item.id),
+      });
+      if (error) {
+        console.error('부서 순서 저장 오류:', error);
+        deptOrder.errorEl.textContent = describeRpcError(error, '부서 순서를 저장하지 못했습니다. 인터넷 연결을 확인한 후 다시 시도해주세요.');
+        deptOrder.errorEl.hidden = false;
+        return;
+      }
+      if (!data || !data.success) {
+        deptOrder.errorEl.textContent = (data && data.message) || '부서 순서를 저장하지 못했습니다.';
+        deptOrder.errorEl.hidden = false;
+        return;
+      }
+      closeDeptOrderPanel();
+      await loadDepartmentsAndMembers();
+    } catch (err) {
+      console.error('부서 순서 변경 오류:', err);
+      if (deptOrder.errorEl) {
+        deptOrder.errorEl.textContent = '부서 순서를 저장하지 못했습니다. 인터넷 연결을 확인한 후 다시 시도해주세요.';
+        deptOrder.errorEl.hidden = false;
+      }
+    } finally {
+      deptOrder.busy = false;
+      if (deptOrder.saveBtn) deptOrder.saveBtn.disabled = false;
+      if (deptOrder.listEl) renderDeptOrderList();
+    }
+  }
+
+  // "+ 부서 추가" 옆에 "부서 순서 변경" 버튼을 덧붙입니다.
+  (function addDeptOrderButton() {
+    const addBtn = document.getElementById('addDepartmentBtn');
+    if (!addBtn || document.getElementById('reorderDepartmentsBtn')) return;
+    const btn = make('button', 'btn-link', '부서 순서 변경');
+    btn.type = 'button';
+    btn.id = 'reorderDepartmentsBtn';
+    btn.addEventListener('click', openDeptOrderPanel);
+    addBtn.insertAdjacentElement('afterend', btn);
+  })();
+
   // 점검/테스트용 (화면 기능에는 영향 없음)
-  window.__adminExtras = { buildCommonAddress, createQrPngDataUrl, copyText, safeFileName };
+  window.__adminExtras = { buildCommonAddress, createQrPngDataUrl, copyText, safeFileName, describeRpcError };
 })();

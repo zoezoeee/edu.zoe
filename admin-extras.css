@@ -126,3 +126,77 @@
 }
 
 .dept-delete-result.is-ok { color: #1F7A3F; }
+
+.dept-delete-result.is-warn { color: #8A6D1E; }
+
+/* ---------- 구성원관리: 순서 변경 (▲▼, 부서 순서 변경 창) ---------- */
+.order-hint {
+  margin: -6px 0 14px;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--ink-soft);
+}
+
+.member-card-actions .member-move-btn,
+.order-row .member-move-btn {
+  min-width: 34px;
+  padding: 7px 8px;
+  text-align: center;
+}
+
+.member-move-btn:disabled { opacity: 0.35; cursor: default; }
+
+.order-panel-desc {
+  margin: -6px 0 14px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--ink-soft);
+}
+
+.order-list {
+  margin: 0 0 14px;
+  padding: 0;
+  list-style: none;
+  max-height: 50vh;
+  overflow-y: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+
+.order-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  border-top: 1px solid var(--line);
+}
+
+.order-row:first-child { border-top: none; }
+
+.order-row-no {
+  width: 22px;
+  font-size: 12.5px;
+  color: var(--ink-soft);
+  text-align: right;
+}
+
+.order-row-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 14.5px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.order-row .member-move-btn {
+  border: 1px solid var(--line);
+  background: var(--paper);
+  color: var(--ink-soft);
+  border-radius: var(--radius-sm);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.order-row .member-move-btn:not(:disabled):hover { border-color: var(--brand-color); color: var(--brand-color); }

@@ -920,7 +920,7 @@ async function loadDepartmentsAndMembers() {
 
     let query = supabaseClient
       .from('members')
-      .select('id, name, member_type, department_id, is_active')
+      .select('id, name, member_type, department_id, is_active, sort_order')
       .eq('org_id', currentAdmin.orgId)
       .order('name', { ascending: true });
 
@@ -931,7 +931,20 @@ async function loadDepartmentsAndMembers() {
     const { data: members, error: memberError } = await query;
     if (memberError) throw memberError;
 
-    membersState.all = members || [];
+    // 삭제된 부서에 속했던 비활성 구성원(서명 이력 보존용으로 남겨 둔 데이터)은 목록에서 숨김
+    const activeDeptIds = new Set(membersState.departments.map((d) => d.id));
+    membersState.all = (members || []).filter(
+      (m) => m.is_active || !m.department_id || activeDeptIds.has(m.department_id)
+    );
+
+    // 표시 순서: 부서 순서(관리자가 지정) → 부서 안 구성원 순서(관리자가 지정) → 이름
+    const deptRank = new Map(membersState.departments.map((d, i) => [d.id, i]));
+    const rankOf = (m) => (deptRank.has(m.department_id) ? deptRank.get(m.department_id) : 1e9);
+    membersState.all.sort((x, y) =>
+      (rankOf(x) - rankOf(y)) ||
+      ((x.sort_order || 0) - (y.sort_order || 0)) ||
+      x.name.localeCompare(y.name, 'ko')
+    );
 
     renderDeptFilter();
     renderMemberList();
