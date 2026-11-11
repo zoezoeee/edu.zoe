@@ -120,7 +120,7 @@
         .order('sort_order', { ascending: true })
         .order('created_at', { ascending: true }),
       supabaseClient.from('signatures')
-        .select('member_id, created_at, image_file_id')
+        .select('member_id, created_at, image_file_id, name_snapshot, department_snapshot')
         .eq('org_id', orgId)
         .eq('training_id', training.id),
     ]);
@@ -140,7 +140,20 @@
     const deptRank = rankDepartments(deptRes.data || []);
     const sigByMember = new Map((sigRes.data || []).map((s) => [s.member_id, s]));
     const targetIds = new Set(targets.map((m) => m.id));
-    const extraSignatureCount = (sigRes.data || []).filter((s) => !targetIds.has(s.member_id)).length;
+    const outsideSigs = (sigRes.data || []).filter((s) => !targetIds.has(s.member_id));
+
+    // 이미 서명한 뒤 삭제(목록에서 숨김 처리)된 구성원도 서명부에 남깁니다.
+    // (이름/부서는 서명 당시 저장된 값(name_snapshot/department_snapshot) 사용)
+    const removedInfo = new Map();
+    if (outsideSigs.length > 0) {
+      const outsideRes = await supabaseClient.from('members')
+        .select('id, department_id, is_active')
+        .eq('org_id', orgId)
+        .in('id', outsideSigs.map((s) => s.member_id).filter(Boolean));
+      if (outsideRes.error) throw outsideRes.error;
+      (outsideRes.data || []).forEach((m) => { if (!m.is_active) removedInfo.set(m.id, m); });
+    }
+    const extraSignatureCount = outsideSigs.filter((s) => !removedInfo.has(s.member_id)).length;
 
     const rows = targets.map((m) => {
       const dept = deptById.get(m.department_id);
@@ -153,6 +166,20 @@
         fileId: sig && sig.image_file_id ? String(sig.image_file_id) : '',
         signedAt: sig ? sig.created_at : null,
       };
+    });
+
+    outsideSigs.forEach((s) => {
+      const info = removedInfo.get(s.member_id);
+      if (!info) return;
+      const dept = deptById.get(info.department_id);
+      rows.push({
+        deptName: dept ? dept.name : (s.department_snapshot || '(부서 미지정)'),
+        deptOrder: dept ? deptRank.get(dept.id) : Number.MAX_SAFE_INTEGER,
+        name: s.name_snapshot || '(이름 없음)',
+        signed: true,
+        fileId: s.image_file_id ? String(s.image_file_id) : '',
+        signedAt: s.created_at || null,
+      });
     });
 
     // 부서는 등록 순서대로, 같은 부서 안에서는 기존처럼 이름 가나다순

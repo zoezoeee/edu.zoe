@@ -1185,21 +1185,28 @@ el.memberForm.addEventListener('submit', async (e) => {
 // ---------- 삭제(비활성화) / 복원 ----------
 async function deactivateMember(member) {
   const ok = window.confirm(
-    '이 구성원을 삭제하시겠습니까?\n\n과거에 완료한 연수의 서명 기록은 보존됩니다.'
+    '이 구성원을 삭제하시겠습니까?\n\n이미 서명한 연수의 서명 기록은 그대로 남습니다.'
   );
   if (!ok) return;
 
   try {
-    const { error } = await supabaseClient
-      .from('members')
-      .update({ is_active: false })
-      .eq('id', member.id)
-      .eq('org_id', currentAdmin.orgId);
+    // 서버 함수(delete_member, 18_member_delete.sql)가 학교 관리자 권한을 확인한 뒤
+    // 서명 기록이 없으면 구성원을 완전히 삭제하고, 있으면 목록에서만 숨깁니다.
+    const { data, error } = await supabaseClient.rpc('delete_member', { p_member_id: member.id });
     if (error) throw error;
+    if (!data || !data.success) {
+      alert((data && data.message) || '구성원을 삭제하지 못했습니다.');
+      return;
+    }
     await loadDepartmentsAndMembers();
   } catch (err) {
     console.error('구성원 삭제 오류:', err);
-    alert('구성원을 삭제하지 못했습니다.');
+    const text = String((err && (err.message || err.details)) || '');
+    if ((err && err.code === 'PGRST202') || /Could not find the function|schema cache/i.test(text)) {
+      alert('구성원 삭제에 필요한 데이터베이스 설정(SQL)이 아직 적용되지 않았습니다. 안내받은 18_member_delete.sql을 먼저 실행해주세요.');
+    } else {
+      alert('구성원을 삭제하지 못했습니다.');
+    }
   }
 }
 
@@ -1534,7 +1541,9 @@ function analyzeExcelRowsAgainstExisting(parsedRows, existingMembers, existingDe
 
     const departmentId = deptIds[0];
     const key = `${normalizeMatchText(row.name)}||${departmentId}`;
-    const matches = existingByKey.get(key) || [];
+    const allMatches = existingByKey.get(key) || [];
+    // 삭제(숨김)된 구성원은 같은 이름의 활성 구성원이 없을 때만 대상이 됩니다 (서버 RPC와 같은 기준)
+    const matches = allMatches.filter((m) => m.is_active);
 
     if (matches.length >= 2) {
       result.status = 'error';
@@ -1547,6 +1556,12 @@ function analyzeExcelRowsAgainstExisting(parsedRows, existingMembers, existingDe
     if (matches.length === 1) {
       result.status = 'update';
       result.message = '기존 구성원과 일치 — 구분 값이 수정됩니다.';
+      return result;
+    }
+
+    if (allMatches.length >= 1) {
+      result.status = 'update';
+      result.message = '이전에 삭제한 구성원과 일치 — 다시 등록되고 구분 값이 수정됩니다. (이전 서명 기록은 그대로 이어집니다)';
       return result;
     }
 
@@ -1680,6 +1695,7 @@ el.saveMemberExcelBtn.addEventListener('click', async () => {
     const createdDepartments = Array.isArray(data.new_departments) ? data.new_departments : [];
     el.excelSaveSuccess.textContent =
       `저장 완료 — 신규 등록 ${data.new_count ?? 0}명, 기존 구성원 수정 ${data.updated_count ?? 0}명` +
+      (data.reactivated_count > 0 ? ` (이 중 삭제했던 구성원 ${data.reactivated_count}명 다시 등록)` : '') +
       (createdDepartments.length > 0
         ? `, 신규 부서 ${createdDepartments.length}개 생성 (${createdDepartments.join(', ')})`
         : '');
@@ -1815,7 +1831,7 @@ async function loadSignatureStatus() {
         .eq('is_active', true),
       supabaseClient
         .from('signatures')
-        .select('member_id, created_at')
+        .select('member_id, created_at, name_snapshot, department_snapshot')
         .eq('org_id', orgId)
         .eq('training_id', training.id),
     ]);
@@ -1858,6 +1874,38 @@ async function loadSignatureStatus() {
       };
     });
 
+    // 이미 서명한 뒤 삭제(목록에서 숨김 처리)된 구성원도, 서명한 연수에는 계속 표시합니다.
+    // (이름/부서는 서명 당시 저장된 값(name_snapshot/department_snapshot)을 그대로 사용)
+    const activeTargetIds = new Set(rows.map((r) => r.memberId));
+    const outsideSigs = (sigRes.data || []).filter((s) => !activeTargetIds.has(s.member_id));
+    const removedInfo = new Map();
+    if (outsideSigs.length > 0) {
+      const { data: outsideMembers, error: outsideErr } = await supabaseClient
+        .from('members')
+        .select('id, department_id, member_type, is_active')
+        .eq('org_id', orgId)
+        .in('id', outsideSigs.map((s) => s.member_id).filter(Boolean));
+      if (outsideErr) throw outsideErr;
+      (outsideMembers || []).forEach((m) => {
+        if (!m.is_active) removedInfo.set(m.id, m);
+      });
+    }
+    outsideSigs.forEach((s) => {
+      const info = removedInfo.get(s.member_id);
+      if (!info) return;
+      const dept = deptInfo.get(info.department_id);
+      rows.push({
+        memberId: s.member_id,
+        name: s.name_snapshot || '(이름 없음)',
+        department: dept ? dept.name : (s.department_snapshot || '부서 미지정'),
+        deptOrder: dept && dept.sort_order != null ? dept.sort_order : Number.MAX_SAFE_INTEGER,
+        memberType: info.member_type || '',
+        signed: true,
+        signedAt: s.created_at || null,
+        removed: true,
+      });
+    });
+
     // 부서 순서(sort_order) → 부서명 → 이름 순
     rows.sort((a, b) =>
       a.deptOrder - b.deptOrder ||
@@ -1865,9 +1913,9 @@ async function loadSignatureStatus() {
       a.name.localeCompare(b.name, 'ko')
     );
 
-    const targetIds = new Set(rows.map((r) => r.memberId));
     signatureState.rows = rows;
-    signatureState.extraSignatureCount = (sigRes.data || []).filter((s) => !targetIds.has(s.member_id)).length;
+    // 위 표에 포함되지 않은 서명 기록(삭제된 구성원이 아닌데 대상에서 빠진 경우)만 안내 문구로 알립니다.
+    signatureState.extraSignatureCount = outsideSigs.filter((s) => !removedInfo.has(s.member_id)).length;
 
     el.sigLoading.hidden = true;
     renderSignatureStatus();
@@ -1897,7 +1945,7 @@ function renderSignatureStatus() {
   if (signatureState.extraSignatureCount > 0) {
     el.sigNote.textContent =
       `대상자 목록에 없는 서명 기록이 ${signatureState.extraSignatureCount}건 있습니다 ` +
-      '(비활성화된 구성원이거나 대상에서 제외된 경우). 위 집계에는 포함되지 않았습니다.';
+      '(대상에서 제외된 구성원). 위 집계에는 포함되지 않았습니다.';
     el.sigNote.hidden = false;
   } else {
     el.sigNote.hidden = true;
@@ -1945,7 +1993,7 @@ function renderSignatureStatus() {
         <p class="member-card-name">${escapeHtml(r.name)}
           ${r.memberType ? `<span class="member-type-badge">${escapeHtml(r.memberType)}</span>` : ''}
         </p>
-        <p class="member-card-meta">${escapeHtml(r.department)}</p>
+        <p class="member-card-meta">${escapeHtml(r.department)}${r.removed ? ' · 삭제된 구성원' : ''}</p>
       </div>
       <div class="sig-status-side">
         <span class="sig-status-badge ${r.signed ? 'is-signed' : 'is-unsigned'}">${r.signed ? '서명 완료' : '미서명'}</span>

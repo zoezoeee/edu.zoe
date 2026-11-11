@@ -474,7 +474,7 @@
         // 서버 함수가 예전 버전(구성원을 삭제하지 않고 비활성화만 함)인 경우
         showDeptDeleteResult(
           '"' + data.department_name + '" 부서를 삭제했습니다. 단, 서버 함수가 이전 버전이라 구성원 ' +
-          data.deleted_member_count + '명은 삭제되지 않고 비활성화되었습니다. 12_department_delete_v2.sql을 실행해주세요.',
+          data.deleted_member_count + '명은 삭제되지 않고 비활성화되었습니다. 12_department_delete_v3.sql을 실행해주세요.',
           'warn'
         );
       } else {
