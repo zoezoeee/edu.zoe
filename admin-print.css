@@ -212,6 +212,9 @@
   height: auto;
   margin: 0 auto;
   object-fit: contain;
+  /* Drive 썸네일은 투명 PNG(서명)의 투명 부분을 검은색으로 채워 보냅니다.
+     밝기를 크게 올린 뒤 색을 반전해 '검은 바탕 → 흰 바탕, 남색 글씨 → 어두운 글씨'로 되돌립니다. */
+  filter: brightness(8) invert(1);
 }
 
 .sigsheet-sign-note {
