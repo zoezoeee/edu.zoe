@@ -31,7 +31,9 @@
   // 공개 링크가 아닙니다. Drive 파일이 비공개이면, 그 파일에 접근 권한이 있는
   // Google 계정으로 로그인된 브라우저에서만 표시됩니다.
   function buildSignatureImageUrl(fileId) {
-    return 'https://drive.google.com/thumbnail?id=' + encodeURIComponent(fileId) + '&sz=w600';
+    // thumbnail 주소는 투명 배경 PNG(서명)의 투명 부분을 검은색으로 바꿔 보여주므로,
+    // 원본 파일을 그대로 보여주는 주소를 사용합니다.
+    return 'https://drive.google.com/uc?export=view&id=' + encodeURIComponent(fileId);
   }
 
   const IMAGE_TIMEOUT_MS = 20000;
