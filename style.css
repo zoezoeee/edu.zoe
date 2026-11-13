@@ -47,6 +47,19 @@ body {
   background: var(--surface-muted);
 }
 
+/* 스크롤 중 화면을 길게 눌렀을 때 글자/영역이 드래그 선택되는 것을 방지 (구성원 서명 화면 전용) */
+.page {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+#signatureCanvas {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
 /* ---------- 상단 기관 배너 ---------- */
 .org-banner {
   background: linear-gradient(155deg, var(--brand-color), var(--brand-color-dark));
