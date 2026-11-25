@@ -32,6 +32,7 @@ const el = {
   orgName: document.getElementById('orgName'),
   orgNotice: document.getElementById('orgNotice'),
   orgBannerNotice: document.getElementById('orgBannerNotice'),
+  orgLogo: document.getElementById('orgLogo'),
 
   stateLoading: document.getElementById('stateLoading'),
   stateLinkError: document.getElementById('stateLinkError'),
@@ -181,6 +182,7 @@ function renderTrainingInfo(training) {
   el.orgName.textContent = training.org_name || '연수 전자서명 시스템';
   el.orgNotice.textContent = training.notice_text || '';
   loadOrgBanner();
+  loadOrgLogo();
 
   if (training.brand_color) {
     document.documentElement.style.setProperty('--brand-color', training.brand_color);
@@ -607,6 +609,7 @@ function renderOrgInfo(org) {
   el.orgName.textContent = org.org_name || '연수 전자서명 시스템';
   el.orgNotice.textContent = org.notice_text || '';
   loadOrgBanner();
+  loadOrgLogo();
   document.title = `${org.org_name || '연수 전자서명 시스템'} - 연수 전자서명`;
 
   // 대표색은 #RRGGBB 형식일 때만 적용
@@ -627,6 +630,24 @@ async function loadOrgBanner() {
     const text = typeof data === 'string' ? data.trim() : '';
     el.orgBannerNotice.textContent = text;   // textContent: HTML로 해석하지 않음
     el.orgBannerNotice.hidden = !text;
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+// 교표(기관설정에서 올린 이미지): 안내문과 같은 방식으로 따로 읽어 옵니다.
+// PNG 데이터 형식일 때만 표시하고, 실패하거나 없으면 숨깁니다(서명 기능과 무관).
+let orgLogoLoaded = false;
+async function loadOrgLogo() {
+  if (orgLogoLoaded || !el.orgLogo) return;
+  orgLogoLoaded = true;
+  try {
+    const { data, error } = await supabaseClient.rpc('get_org_logo', { p_org_code: ORG_CODE });
+    if (error) return;   // 함수가 아직 없는 경우 등: 조용히 무시
+    if (typeof data === 'string' && /^data:image\/png;base64,[A-Za-z0-9+\/=]+$/.test(data)) {
+      el.orgLogo.src = data;
+      el.orgLogo.hidden = false;
+    }
   } catch (err) {
     console.error(err);
   }

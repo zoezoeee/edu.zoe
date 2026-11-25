@@ -35,6 +35,11 @@
     pvName: $('orgPreviewName'),
     pvSubtitle: $('orgPreviewSubtitle'),
     pvBanner: $('orgPreviewBanner'),
+    pvLogo: $('orgPreviewLogo'),
+    logoFile: $('orgLogoFile'),
+    logoThumb: $('orgLogoThumb'),
+    logoEmpty: $('orgLogoEmpty'),
+    logoRemove: $('orgLogoRemoveBtn'),
     error: $('orgSettingsError'),
     success: $('orgSettingsSuccess'),
     saveBtn: $('orgSettingsSaveBtn'),
@@ -42,6 +47,12 @@
   if (!ui.form || !ui.grid) return;   // 화면이 없으면 아무것도 하지 않음
 
   let hasBannerColumn = true;   // 22_org_settings.sql 실행 전이면 false
+  let hasLogoColumn = true;     // 23_org_logo.sql 실행 전이면 false
+  let logoValue = null;         // 현재 교표(data URL) 또는 null
+  let logoChanged = false;      // 이번에 바꾼 경우에만 저장 요청에 포함
+  const LOGO_SIZE = 128;
+  const LOGO_MAX_CHARS = 150000;
+  const LOGO_MAX_FILE = 5 * 1024 * 1024;
   let saving = false;
 
   const isHexColor = (v) => /^#[0-9a-fA-F]{6}$/.test(v || '');
@@ -88,6 +99,7 @@
     ui.pvBanner.textContent = banV;
     ui.pvBanner.hidden = !banV;
     ui.preview.style.setProperty('--brand-color', color);
+    renderLogo();
     ui.colorCode.textContent = color.toUpperCase();
 
     ui.nameCount.textContent = ui.name.value.length + '/' + LIMITS.name;
@@ -104,27 +116,72 @@
     });
   }
 
+  function renderLogo() {
+    const has = !!logoValue;
+    ui.pvLogo.hidden = !has;
+    ui.logoThumb.hidden = !has;
+    ui.logoEmpty.hidden = has;
+    ui.logoRemove.hidden = !has;
+    if (has) {
+      ui.pvLogo.src = logoValue;
+      ui.logoThumb.src = logoValue;
+    } else {
+      ui.pvLogo.removeAttribute('src');
+      ui.logoThumb.removeAttribute('src');
+    }
+  }
+
+  // 선택한 이미지를 128x128 정사각형(1:1) 투명 캔버스 가운데에 비율 유지로 맞춰 PNG로 변환
+  function fileToSquareLogo(file) {
+    return new Promise((resolve, reject) => {
+      if (!/^image\/(png|jpeg)$/.test(file.type)) return reject(new Error('PNG 또는 JPG 파일만 올릴 수 있습니다.'));
+      if (file.size > LOGO_MAX_FILE) return reject(new Error('파일이 너무 큽니다. 5MB 이하 이미지를 선택해주세요.'));
+      const reader = new FileReader();
+      reader.onerror = () => reject(new Error('이미지를 읽지 못했습니다.'));
+      reader.onload = () => {
+        const img = new Image();
+        img.onerror = () => reject(new Error('이미지를 열 수 없습니다. 다른 파일을 선택해주세요.'));
+        img.onload = () => {
+          try {
+            const w = img.naturalWidth, h = img.naturalHeight;
+            if (!w || !h) return reject(new Error('이미지를 열 수 없습니다. 다른 파일을 선택해주세요.'));
+            const canvas = document.createElement('canvas');
+            canvas.width = LOGO_SIZE; canvas.height = LOGO_SIZE;
+            const ctx = canvas.getContext('2d');
+            const scale = Math.min(LOGO_SIZE / w, LOGO_SIZE / h);
+            const dw = Math.round(w * scale), dh = Math.round(h * scale);
+            ctx.clearRect(0, 0, LOGO_SIZE, LOGO_SIZE);
+            ctx.drawImage(img, Math.round((LOGO_SIZE - dw) / 2), Math.round((LOGO_SIZE - dh) / 2), dw, dh);
+            const out = canvas.toDataURL('image/png');
+            if (out.length > LOGO_MAX_CHARS) return reject(new Error('이미지 용량이 너무 큽니다. 더 단순한 이미지를 선택해주세요.'));
+            resolve(out);
+          } catch (e) { reject(new Error('이미지를 처리하지 못했습니다.')); }
+        };
+        img.src = reader.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
   async function loadSettings() {
     showError('');
     showSuccess('');
     ui.saveBtn.disabled = true;
 
-    let res = await supabaseClient
-      .from('organizations')
-      .select('name, notice_text, brand_color, banner_text')
-      .eq('id', currentAdmin.orgId)
-      .maybeSingle();
-
-    if (res.error) {
-      // banner_text 컬럼이 아직 없는 경우(22번 SQL 미실행) → 나머지 항목만이라도 편집 가능하게 함
-      hasBannerColumn = false;
+    // 22/23번 SQL 실행 여부에 따라 읽을 수 있는 컬럼이 달라서, 단계적으로 시도합니다.
+    const attempts = [
+      { cols: 'name, notice_text, brand_color, banner_text, logo_data', banner: true, logo: true },
+      { cols: 'name, notice_text, brand_color, banner_text', banner: true, logo: false },
+      { cols: 'name, notice_text, brand_color', banner: false, logo: false },
+    ];
+    let res = null;
+    for (const a of attempts) {
       res = await supabaseClient
         .from('organizations')
-        .select('name, notice_text, brand_color')
+        .select(a.cols)
         .eq('id', currentAdmin.orgId)
         .maybeSingle();
-    } else {
-      hasBannerColumn = true;
+      if (!res.error) { hasBannerColumn = a.banner; hasLogoColumn = a.logo; break; }
     }
 
     if (res.error || !res.data) {
@@ -139,10 +196,18 @@
     ui.banner.value = hasBannerColumn ? (d.banner_text || '') : '';
     ui.banner.disabled = !hasBannerColumn;
     ui.color.value = isHexColor(d.brand_color) ? d.brand_color : DEFAULT_COLOR;
+    logoValue = hasLogoColumn && typeof d.logo_data === 'string' && d.logo_data.indexOf('data:image/png;base64,') === 0 ? d.logo_data : null;
+    logoChanged = false;
+    ui.logoFile.value = '';
+    ui.logoFile.disabled = !hasLogoColumn;
+    ui.logoRemove.disabled = !hasLogoColumn;
     updatePreview();
 
-    if (!hasBannerColumn) {
-      showError('안내문 기능을 쓰려면 먼저 22_org_settings.sql을 Supabase에서 실행해야 합니다. (기관명·부제목·색상은 지금도 저장할 수 있습니다.)');
+    const missing = [];
+    if (!hasBannerColumn) missing.push('안내문: 22_org_settings.sql');
+    if (!hasLogoColumn) missing.push('교표: 23_org_logo.sql');
+    if (missing.length) {
+      showError('다음 기능을 쓰려면 먼저 Supabase에서 SQL을 실행해야 합니다 → ' + missing.join(', ') + ' (나머지 항목은 지금도 저장할 수 있습니다.)');
     }
     ui.saveBtn.disabled = false;
   }
@@ -161,6 +226,28 @@
   [ui.name, ui.subtitle, ui.banner, ui.color].forEach((i) => {
     i.addEventListener('input', () => { showSuccess(''); updatePreview(); });
   });
+  ui.logoFile.addEventListener('change', async () => {
+    const file = ui.logoFile.files && ui.logoFile.files[0];
+    if (!file) return;
+    showError('');
+    showSuccess('');
+    try {
+      logoValue = await fileToSquareLogo(file);
+      logoChanged = true;
+      updatePreview();
+    } catch (err) {
+      showError(err.message || '이미지를 처리하지 못했습니다.');
+    } finally {
+      ui.logoFile.value = '';
+    }
+  });
+  ui.logoRemove.addEventListener('click', () => {
+    logoValue = null;
+    logoChanged = true;
+    showSuccess('');
+    updatePreview();
+  });
+
   ui.swatches.addEventListener('click', (e) => {
     const b = e.target.closest('.org-swatch');
     if (!b) return;
@@ -187,6 +274,7 @@
 
     const patch = { name: nameV, notice_text: subV || null, brand_color: color };
     if (hasBannerColumn) patch.banner_text = banV || null;
+    if (hasLogoColumn && logoChanged) patch.logo_data = logoValue || null;
 
     saving = true;
     ui.saveBtn.disabled = true;
@@ -213,6 +301,7 @@
       if (el.adminOrgNameInline) el.adminOrgNameInline.textContent = nameV;
       document.documentElement.style.setProperty('--brand-color', color);
 
+      logoChanged = false;
       showSuccess('저장했습니다. 구성원 서명 화면을 새로고침하면 바뀐 내용이 보입니다.');
     } catch (err) {
       console.error(err);

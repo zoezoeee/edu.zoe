@@ -75,6 +75,21 @@ body {
   opacity: 0.92;
 }
 
+/* 학교명 왼쪽 교표 (기관설정에서 올린 경우에만 표시, 정사각형 1:1) */
+.org-name-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 6px;
+}
+.org-name-row .org-name { margin: 0; min-width: 0; }
+.org-logo {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+}
+
 .org-notice {
   margin: 0;
   font-size: 16.5px;
