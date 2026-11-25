@@ -79,7 +79,7 @@ body {
 .org-name-row {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 0;
   margin: 0 0 6px;
 }
 .org-name-row .org-name { margin: 0; min-width: 0; }
