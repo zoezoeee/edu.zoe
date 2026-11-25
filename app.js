@@ -31,6 +31,7 @@ const IS_ORG_MODE = !!ORG_CODE && !TRAINING_ID;
 const el = {
   orgName: document.getElementById('orgName'),
   orgNotice: document.getElementById('orgNotice'),
+  orgBannerNotice: document.getElementById('orgBannerNotice'),
 
   stateLoading: document.getElementById('stateLoading'),
   stateLinkError: document.getElementById('stateLinkError'),
@@ -179,6 +180,7 @@ function renderTrainingInfo(training) {
 
   el.orgName.textContent = training.org_name || '연수 전자서명 시스템';
   el.orgNotice.textContent = training.notice_text || '';
+  loadOrgBanner();
 
   if (training.brand_color) {
     document.documentElement.style.setProperty('--brand-color', training.brand_color);
@@ -604,11 +606,29 @@ async function initOrgFlow() {
 function renderOrgInfo(org) {
   el.orgName.textContent = org.org_name || '연수 전자서명 시스템';
   el.orgNotice.textContent = org.notice_text || '';
+  loadOrgBanner();
   document.title = `${org.org_name || '연수 전자서명 시스템'} - 연수 전자서명`;
 
   // 대표색은 #RRGGBB 형식일 때만 적용
   if (org.brand_color && /^#[0-9a-fA-F]{3,8}$/.test(org.brand_color)) {
     document.documentElement.style.setProperty('--brand-color', org.brand_color);
+  }
+}
+
+// 기관 안내문(기관설정의 '안내문'): 별도 함수로 읽어 옵니다.
+// 실패하거나 비어 있으면 박스를 숨기고, 서명 기능에는 영향을 주지 않습니다.
+let orgBannerLoaded = false;
+async function loadOrgBanner() {
+  if (orgBannerLoaded || !el.orgBannerNotice) return;
+  orgBannerLoaded = true;
+  try {
+    const { data, error } = await supabaseClient.rpc('get_org_banner', { p_org_code: ORG_CODE });
+    if (error) return;   // 함수가 아직 없는 경우 등: 조용히 무시
+    const text = typeof data === 'string' ? data.trim() : '';
+    el.orgBannerNotice.textContent = text;   // textContent: HTML로 해석하지 않음
+    el.orgBannerNotice.hidden = !text;
+  } catch (err) {
+    console.error(err);
   }
 }
 

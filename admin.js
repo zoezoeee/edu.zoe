@@ -107,6 +107,9 @@ const el = {
   excelSaveError: document.getElementById('excelSaveError'),
   excelSaveSuccess: document.getElementById('excelSaveSuccess'),
 
+  // 기관설정 (화면 동작은 admin-org-settings.js)
+  orgSettingsScreen: document.getElementById('adminOrgSettingsScreen'),
+
   // 서명 현황
   signaturesScreen: document.getElementById('adminSignaturesScreen'),
   signaturesBackBtn: document.getElementById('signaturesBackBtn'),
@@ -168,7 +171,7 @@ const excelImportState = {
 };
 
 function showOnly(sectionEl) {
-  [el.stateLoading, el.loginScreen, el.homeScreen, el.trainingsScreen, el.membersScreen, el.signaturesScreen].forEach((s) => {
+  [el.stateLoading, el.loginScreen, el.homeScreen, el.trainingsScreen, el.membersScreen, el.signaturesScreen, el.orgSettingsScreen].forEach((s) => {
     s.hidden = s !== sectionEl;
   });
 }

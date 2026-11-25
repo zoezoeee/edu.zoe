@@ -11,6 +11,7 @@
 <link rel="stylesheet" href="admin.css">
 <link rel="stylesheet" href="admin-print.css">
 <link rel="stylesheet" href="admin-extras.css">
+<link rel="stylesheet" href="admin-org-settings.css">
 </head>
 <body class="admin-body">
 
@@ -81,8 +82,63 @@
           <span class="admin-menu-card-title">구성원관리</span>
           <span class="admin-menu-card-desc">부서별 구성원 등록·수정·삭제, 교원/교직원 구분 관리</span>
         </button>
+        <button type="button" class="admin-menu-card" data-menu-key="org-settings" data-menu-label="기관설정">
+          <span class="admin-menu-card-title">기관설정</span>
+          <span class="admin-menu-card-desc">기관명·부제목·안내문과 대표 색상 변경, 서명 화면 상단 미리보기</span>
+        </button>
       </div>
 
+    </section>
+
+    <!-- ============ 기관설정 화면 ============ -->
+    <section class="admin-org-settings" id="adminOrgSettingsScreen" hidden>
+
+      <header class="admin-subheader">
+        <button type="button" class="btn-link" id="orgSettingsBackBtn">&larr; 관리자 홈</button>
+        <h1 class="admin-subheader-title">기관설정</h1>
+        <p class="admin-subheader-desc">구성원 서명 화면 상단에 표시되는 문구와 색상을 바꿉니다. 글자 크기는 고정입니다.</p>
+      </header>
+
+      <form class="org-settings-card" id="orgSettingsForm" novalidate>
+
+        <label class="field">
+          <span>기관명 <em class="org-settings-count" id="orgNameCount"></em></span>
+          <input type="text" id="orgSettingName" maxlength="30" autocomplete="off">
+        </label>
+
+        <label class="field">
+          <span>부제목 <em class="org-settings-hint">(선택 · 기관명 아래 작은 문구)</em> <em class="org-settings-count" id="orgSubtitleCount"></em></span>
+          <input type="text" id="orgSettingSubtitle" maxlength="40" autocomplete="off">
+        </label>
+
+        <label class="field">
+          <span>안내문 <em class="org-settings-hint">(선택 · 서명 화면 상단 박스에 한 문장 표시)</em> <em class="org-settings-count" id="orgBannerCount"></em></span>
+          <input type="text" id="orgSettingBanner" maxlength="60" autocomplete="off">
+        </label>
+
+        <div class="field">
+          <span>대표 색상</span>
+          <div class="org-color-row">
+            <input type="color" id="orgSettingColor" aria-label="대표 색상 선택">
+            <code class="org-color-code" id="orgColorCode">#2A4B8D</code>
+          </div>
+          <div class="org-color-swatches" id="orgColorSwatches"></div>
+        </div>
+
+        <p class="org-settings-label">서명 화면 미리보기</p>
+        <div class="org-preview" id="orgPreview">
+          <div class="org-preview-banner">
+            <p class="org-name" id="orgPreviewName"></p>
+            <p class="org-notice" id="orgPreviewSubtitle"></p>
+          </div>
+          <p class="org-banner-notice" id="orgPreviewBanner" hidden></p>
+        </div>
+
+        <p class="org-settings-error" id="orgSettingsError" hidden></p>
+        <p class="org-settings-success" id="orgSettingsSuccess" hidden></p>
+
+        <button type="submit" class="btn btn-primary" id="orgSettingsSaveBtn">저장하기</button>
+      </form>
     </section>
 
     <!-- ============ 구성원관리 화면 ============ -->
@@ -384,5 +440,7 @@
   <!-- 학교 공통 주소 복사/QR코드, 부서 삭제 (admin.js 다음에 불러와야 합니다) -->
   <script src="qrcode-generator.js"></script>
   <script src="admin-extras.js"></script>
+  <!-- 기관설정 (admin.js 다음에 불러와야 합니다) -->
+  <script src="admin-org-settings.js"></script>
 </body>
 </html>

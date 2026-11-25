@@ -85,6 +85,20 @@ body {
 
 .org-notice:empty { display: none; }
 
+/* 기관설정의 '안내문' 박스 (본문 시트 맨 위, 비어 있으면 숨김) */
+.org-banner-notice {
+  margin: 0 0 18px;
+  padding: 12px 14px;
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--ink);
+  background: var(--surface-muted);
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--brand-color);
+  border-radius: var(--radius-md);
+  overflow-wrap: anywhere;
+}
+
 /* ---------- 본문 시트 ---------- */
 .sheet {
   flex: 1;

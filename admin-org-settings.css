@@ -1,0 +1,63 @@
+/* ============================================================
+   기관설정 화면 (관리자) — admin-org-settings.js 전용
+   ============================================================ */
+.admin-org-settings { padding: 26px 0 60px; }
+
+.org-settings-card {
+  background: var(--paper);
+  border-radius: var(--radius-md);
+  padding: 22px 20px 24px;
+  box-shadow: 0 1px 8px rgba(27, 35, 51, 0.04);
+}
+
+.org-settings-card .field span { font-size: 14px; font-weight: 600; color: var(--ink); }
+.org-settings-hint { font-style: normal; font-weight: 500; font-size: 12.5px; color: var(--ink-soft); }
+.org-settings-count { float: right; font-style: normal; font-weight: 500; font-size: 12.5px; color: var(--ink-soft); }
+.org-settings-label { margin: 22px 0 8px; font-size: 14px; font-weight: 600; }
+
+.org-color-row { display: flex; align-items: center; gap: 12px; }
+.org-color-row input[type="color"] {
+  width: 56px; height: 40px; padding: 2px;
+  border: 1px solid var(--line); border-radius: var(--radius-sm);
+  background: var(--paper); cursor: pointer;
+}
+.org-color-code { font-size: 14px; color: var(--ink-soft); }
+.org-color-code[data-warn]::after {
+  content: " · " attr(data-warn);
+  color: var(--danger);
+  font-size: 12.5px;
+}
+
+.org-color-swatches { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+.org-swatch {
+  width: 34px; height: 34px; border-radius: 50%;
+  border: 2px solid var(--paper);
+  box-shadow: 0 0 0 1px var(--line);
+  cursor: pointer; padding: 0;
+}
+.org-swatch.is-active { box-shadow: 0 0 0 2px var(--ink); }
+
+/* 서명 화면 상단 미리보기 (실제 화면과 같은 글자 크기를 사용) */
+.org-preview {
+  background: var(--surface-muted);
+  border-radius: var(--radius-md);
+  padding: 14px;
+  overflow: hidden;
+}
+.org-preview-banner {
+  background: linear-gradient(155deg, var(--brand-color), var(--brand-color-dark));
+  color: #fff;
+  border-radius: var(--radius-md);
+  padding: 26px 22px 30px;
+}
+.org-preview .org-banner-notice { margin: 12px 0 0; }
+
+.org-settings-error {
+  margin: 14px 0 0; font-size: 13px; color: var(--danger);
+  background: var(--danger-bg); border-radius: var(--radius-sm); padding: 10px 12px;
+}
+.org-settings-success {
+  margin: 14px 0 0; font-size: 13px; color: var(--success);
+  background: var(--success-bg); border-radius: var(--radius-sm); padding: 10px 12px;
+}
+.org-settings-card .btn-primary { margin-top: 18px; }
